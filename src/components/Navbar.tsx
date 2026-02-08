@@ -18,8 +18,8 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/5 bg-background/80 backdrop-blur-xl">
       <div className="container mx-auto flex items-center justify-between py-5 md:py-6 px-4">
-        <a href="#" className="flex items-center gap-0.5 md:gap-1">
-          <img src={logo} alt="Gênio Visual" className="h-[110px] w-[110px] md:h-[140px] md:w-[140px] object-contain flex-shrink-0" style={{ filter: 'drop-shadow(0 0 8px hsl(189 98% 51% / 0.35))' }} />
+        <a href="#" className="flex items-center gap-0">
+          <img src={logo} alt="Gênio Visual" className="h-[110px] w-[110px] -mr-6 md:h-[140px] md:w-[140px] md:-mr-8 object-contain flex-shrink-0" style={{ filter: 'drop-shadow(0 0 8px hsl(189 98% 51% / 0.35))' }} />
           <span className="font-heading font-bold text-xl md:text-2xl neon-gradient-text tracking-[0.15em]">GÊNIO VISUAL</span>
         </a>
 
