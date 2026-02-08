@@ -42,7 +42,7 @@ const Localizacao = () => {
               <p className="text-muted-foreground mb-6">Avenida principal, ponto estratégico — Goiânia, GO</p>
             </div>
             <a
-              href="https://maps.google.com/?q=Goiania+GO"
+              href="https://maps.app.goo.gl/ddU4i4T63wLnjseX8"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-neon-outline flex items-center justify-center gap-2 !text-sm !py-3"
