@@ -9,7 +9,7 @@ const stats = [
   { value: "1,7 mi", label: "impactos/mês" },
   { value: "115 mil", label: "impactos/mês por anunciante" },
   { value: "13 mil", label: "exibições/mês por anunciante" },
-  { value: "24", label: "aparições por hora" },
+  { value: "Mais de 400", label: "aparições por dia" },
 ];
 
 const tags = [
