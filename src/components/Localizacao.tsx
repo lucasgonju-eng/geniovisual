@@ -22,7 +22,7 @@ const Localizacao = () => {
           <span className="neon-gradient-text">Localização</span> Estratégica
         </h2>
         <p className="text-muted-foreground text-center text-lg mb-12 max-w-2xl mx-auto">
-          O painel está em um ponto estratégico de Goiânia com alto fluxo diário e visibilidade privilegiada.
+          Em frente ao Colégio Einstein, a 40 m do Goiânia Shopping. Fluxo intenso e visibilidade máxima todos os dias.
         </p>
 
         <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-12">
