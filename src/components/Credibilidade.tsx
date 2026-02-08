@@ -4,7 +4,7 @@ const items = [
   { icon: Headphones, label: "Atendimento rápido" },
   { icon: Paintbrush, label: "Troca de criativo facilitada" },
   { icon: BarChart3, label: "Suporte para campanhas" },
-  { icon: ShieldCheck, label: "Exclusividade no rodízio limitado" },
+  { icon: ShieldCheck, label: "Transparência desde o primeiro contato" },
 ];
 
 const Credibilidade = () => (
