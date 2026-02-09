@@ -5,7 +5,7 @@ import { toast } from "sonner";
 const WHATSAPP_NUMBER = "+5521995952526";
 const pitchText = "Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta para o plano anual.";
 const PROPOSAL_EMAIL = "contato@geniovisual.cloud";
-const FORM_ENDPOINT = "/preview/send.php";
+const FORM_ENDPOINT = "/send.php";
 
 const planOptions = ["Bronze (Mensal)", "Prata (Trimestral)", "Ouro (Semestral)", "Diamante (Anual)", "Black (Bienal)"];
 
