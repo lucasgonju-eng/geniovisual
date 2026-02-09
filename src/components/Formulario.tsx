@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageCircle, Send, Copy, CheckCircle } from "lucide-react";
+import { MessageCircle, Send, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const WHATSAPP_NUMBER = "5562999999999";
@@ -28,11 +28,6 @@ const Formulario = () => {
     console.log("Lead submitted:", form);
     setSubmitted(true);
     toast.success("Proposta enviada com sucesso!");
-  };
-
-  const copyPitch = () => {
-    navigator.clipboard.writeText(pitchText);
-    toast.success("Mensagem copiada!");
   };
 
   if (submitted) {
@@ -138,27 +133,15 @@ const Formulario = () => {
             </button>
           </form>
 
-          {/* Pitch card */}
-          <div className="flex flex-col gap-6">
-            <div className="glass-card neon-gradient-border rounded-xl p-8 flex-1">
-              <h3 className="font-heading text-xl font-semibold mb-4">📋 Pitch pronto para WhatsApp</h3>
-              <p className="text-muted-foreground leading-relaxed italic mb-6">"{pitchText}"</p>
-              <button onClick={copyPitch} className="btn-neon-outline flex items-center justify-center gap-2 w-full !text-sm !py-3">
-                <Copy className="w-4 h-4" />
-                Copiar mensagem
-              </button>
-            </div>
-
-            <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(pitchText)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-neon flex items-center justify-center gap-2 text-center"
-            >
-              <MessageCircle className="w-5 h-5" />
-              Ou fale direto no WhatsApp
-            </a>
-          </div>
+          <a
+            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(pitchText)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-neon flex items-center justify-center gap-2 text-center"
+          >
+            <MessageCircle className="w-5 h-5" />
+            Ou fale direto no WhatsApp
+          </a>
         </div>
       </div>
     </section>
