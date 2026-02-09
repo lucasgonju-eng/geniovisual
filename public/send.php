@@ -30,7 +30,7 @@ if ($name === '' || $whatsapp === '') {
   exit;
 }
 
-$to = 'contato@geniovisual.cloud';
+$to = 'lucasgonju@gmail.com';
 $body = "Nome: {$name}\n"
       . "WhatsApp: {$whatsapp}\n"
       . "Empresa: {$empresa}\n"
@@ -39,9 +39,8 @@ $body = "Nome: {$name}\n"
 
 $headers = "MIME-Version: 1.0\r\n"
          . "Content-Type: text/plain; charset=UTF-8\r\n"
-         . "From: contato@geniovisual.cloud\r\n"
-         . "Reply-To: contato@geniovisual.cloud\r\n"
-         . "Bcc: lucasgonju@gmail.com\r\n"
+         . "From: lucasgonju@gmail.com\r\n"
+         . "Reply-To: lucasgonju@gmail.com\r\n"
          . "X-Lead-WhatsApp: {$whatsapp}\r\n";
 
 $sent = mail($to, $subject, $body, $headers);
