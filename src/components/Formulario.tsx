@@ -5,6 +5,7 @@ import { toast } from "sonner";
 const WHATSAPP_NUMBER = "+5521995952526";
 const pitchText = "Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta para o plano anual.";
 const PROPOSAL_EMAIL = "comercial@geniovisual.cloud";
+const FORM_ENDPOINT = `https://formsubmit.co/ajax/${PROPOSAL_EMAIL}`;
 
 const planOptions = ["Bronze (Mensal)", "Prata (Trimestral)", "Ouro (Semestral)", "Diamante (Anual)", "Black (Bienal)"];
 
@@ -18,25 +19,45 @@ const Formulario = () => {
     mensagem: "",
     consent: false,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.whatsapp || !form.consent) {
       toast.error("Preencha os campos obrigatórios.");
       return;
     }
-    const subject = `Solicitação de proposta - ${form.name}`;
-    const body = [
-      `Nome: ${form.name}`,
-      `WhatsApp: ${form.whatsapp}`,
-      `Empresa: ${form.empresa || "Não informado"}`,
-      `Plano: ${form.plano || "Não informado"}`,
-      `Mensagem: ${form.mensagem || "Não informado"}`,
-    ].join("\n");
+    setIsSubmitting(true);
+    const formData = new FormData();
+    formData.append("Nome", form.name);
+    formData.append("WhatsApp", form.whatsapp);
+    formData.append("Empresa", form.empresa || "Não informado");
+    formData.append("Plano", form.plano || "Não informado");
+    formData.append("Mensagem", form.mensagem || "Não informado");
+    formData.append("_subject", `Solicitação de proposta - ${form.name}`);
+    formData.append("_template", "table");
+    formData.append("_captcha", "false");
 
-    window.location.href = `mailto:${PROPOSAL_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    setSubmitted(true);
-    toast.success("Proposta enviada com sucesso!");
+    try {
+      const response = await fetch(FORM_ENDPOINT, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao enviar proposta");
+      }
+
+      setSubmitted(true);
+      toast.success("Proposta enviada com sucesso!");
+    } catch (error) {
+      toast.error("Não foi possível enviar agora. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -136,9 +157,13 @@ const Formulario = () => {
               />
               <span className="text-xs text-muted-foreground">Autorizo o contato da Gênio Visual para envio de proposta comercial.</span>
             </label>
-            <button type="submit" className="btn-neon w-full flex items-center justify-center gap-2">
+            <button
+              type="submit"
+              className="btn-neon w-full flex items-center justify-center gap-2"
+              disabled={isSubmitting}
+            >
               <Send className="w-5 h-5" />
-              Receber proposta agora
+              {isSubmitting ? "Enviando..." : "Receber proposta agora"}
             </button>
           </form>
 
