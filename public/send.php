@@ -21,7 +21,8 @@ $whatsapp = trim($data['whatsapp'] ?? '');
 $empresa = trim($data['empresa'] ?? 'Nao informado');
 $plano = trim($data['plano'] ?? 'Nao informado');
 $mensagem = trim($data['mensagem'] ?? 'Nao informado');
-$subject = trim($data['subject'] ?? 'Solicitacao de proposta');
+$subjectBase = trim($data['subject'] ?? 'Solicitacao de proposta');
+$subject = "{$subjectBase} (WhatsApp: {$whatsapp})";
 
 if ($name === '' || $whatsapp === '') {
   http_response_code(422);
@@ -40,7 +41,8 @@ $headers = "MIME-Version: 1.0\r\n"
          . "Content-Type: text/plain; charset=UTF-8\r\n"
          . "From: contato@geniovisual.cloud\r\n"
          . "Reply-To: contato@geniovisual.cloud\r\n"
-         . "Bcc: lucasgonju@gmail.com\r\n";
+         . "Bcc: lucasgonju@gmail.com\r\n"
+         . "X-Lead-WhatsApp: {$whatsapp}\r\n";
 
 $sent = mail($to, $subject, $body, $headers);
 
