@@ -1,7 +1,7 @@
 import { MessageCircle, Star } from "lucide-react";
 import logo from "@/assets/logo.png";
 
-const WHATSAPP_NUMBER = "5562999999999";
+const WHATSAPP_NUMBER = "+5521995952526";
 
 const plans = [
   {

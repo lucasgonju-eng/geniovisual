@@ -2,7 +2,7 @@ import { useState } from "react";
 import { MessageCircle, Send, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
-const WHATSAPP_NUMBER = "5562999999999";
+const WHATSAPP_NUMBER = "+5521995952526";
 const pitchText = "Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta para o plano anual.";
 
 const planOptions = ["Bronze (Mensal)", "Prata (Trimestral)", "Ouro (Semestral)", "Diamante (Anual)", "Black (Bienal)"];
