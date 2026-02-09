@@ -27,7 +27,7 @@ const Footer = () => (
       <div className="text-center">
         <p className="text-muted-foreground text-sm mb-2">Gênio Visual • Painéis de LED em Goiânia/GO</p>
         <p className="text-muted-foreground text-xs max-w-2xl mx-auto">
-          Métricas e projeções apresentadas são estimativas comerciais. Para dados auditados, consulte opções de medição por sensores ou análise técnica.
+          Desenvolvido por Lucas Gonçalves Júnior - 2026
         </p>
       </div>
     </div>
