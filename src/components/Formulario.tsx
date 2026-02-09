@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 const WHATSAPP_NUMBER = "+5521995952526";
 const pitchText = "Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta para o plano anual.";
+const PROPOSAL_EMAIL = "comercial@geniovisual.cloud";
 
 const planOptions = ["Bronze (Mensal)", "Prata (Trimestral)", "Ouro (Semestral)", "Diamante (Anual)", "Black (Bienal)"];
 
@@ -24,8 +25,16 @@ const Formulario = () => {
       toast.error("Preencha os campos obrigatórios.");
       return;
     }
-    // Simulated form submit — ready for backend integration
-    console.log("Lead submitted:", form);
+    const subject = `Solicitação de proposta - ${form.name}`;
+    const body = [
+      `Nome: ${form.name}`,
+      `WhatsApp: ${form.whatsapp}`,
+      `Empresa: ${form.empresa || "Não informado"}`,
+      `Plano: ${form.plano || "Não informado"}`,
+      `Mensagem: ${form.mensagem || "Não informado"}`,
+    ].join("\n");
+
+    window.location.href = `mailto:${PROPOSAL_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     setSubmitted(true);
     toast.success("Proposta enviada com sucesso!");
   };
