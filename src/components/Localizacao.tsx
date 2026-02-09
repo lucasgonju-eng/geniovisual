@@ -39,7 +39,7 @@ const Localizacao = () => {
             <div>
               <MapPin className="w-8 h-8 text-neon-cyan mb-4" />
               <h3 className="font-heading text-xl font-semibold mb-2">Endereço do Painel</h3>
-              <p className="text-muted-foreground mb-6">Avenida principal, ponto estratégico — Goiânia, GO</p>
+              <p className="text-muted-foreground mb-6">Em frente ao Colégio Einstein, a 40 m do Goiânia Shopping. Fluxo intenso e visibilidade máxima todos os dias.</p>
             </div>
             <a
               href="https://maps.app.goo.gl/ddU4i4T63wLnjseX8"
