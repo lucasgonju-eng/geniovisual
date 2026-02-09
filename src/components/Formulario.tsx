@@ -4,8 +4,8 @@ import { toast } from "sonner";
 
 const WHATSAPP_NUMBER = "+5521995952526";
 const pitchText = "Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta para o plano anual.";
-const PROPOSAL_EMAIL = "comercial@geniovisual.cloud";
-const FORM_ENDPOINT = `https://formsubmit.co/ajax/${PROPOSAL_EMAIL}`;
+const PROPOSAL_EMAIL = "contato@geniovisual.cloud";
+const FORM_ENDPOINT = "/preview/send.php";
 
 const planOptions = ["Bronze (Mensal)", "Prata (Trimestral)", "Ouro (Semestral)", "Diamante (Anual)", "Black (Bienal)"];
 
@@ -28,23 +28,21 @@ const Formulario = () => {
       return;
     }
     setIsSubmitting(true);
-    const formData = new FormData();
-    formData.append("Nome", form.name);
-    formData.append("WhatsApp", form.whatsapp);
-    formData.append("Empresa", form.empresa || "Não informado");
-    formData.append("Plano", form.plano || "Não informado");
-    formData.append("Mensagem", form.mensagem || "Não informado");
-    formData.append("_subject", `Solicitação de proposta - ${form.name}`);
-    formData.append("_template", "table");
-    formData.append("_captcha", "false");
-
     try {
       const response = await fetch(FORM_ENDPOINT, {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: formData,
+        body: JSON.stringify({
+          nome: form.name,
+          whatsapp: form.whatsapp,
+          empresa: form.empresa || "Não informado",
+          plano: form.plano || "Não informado",
+          mensagem: form.mensagem || "Não informado",
+          subject: `Solicitação de proposta - ${form.name}`,
+        }),
       });
 
       if (!response.ok) {
