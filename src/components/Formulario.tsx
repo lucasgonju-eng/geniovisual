@@ -60,7 +60,7 @@ const Formulario = () => {
           Receber <span className="neon-gradient-text">Proposta</span>
         </h2>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        <div className="grid gap-8 max-w-3xl mx-auto">
           {/* Form */}
           <form onSubmit={handleSubmit} className="glass-card neon-gradient-border rounded-xl p-8 space-y-5">
             <div>
@@ -133,15 +133,6 @@ const Formulario = () => {
             </button>
           </form>
 
-          <a
-            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(pitchText)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-neon flex items-center justify-center gap-2 text-center"
-          >
-            <MessageCircle className="w-5 h-5" />
-            Ou fale direto no WhatsApp
-          </a>
         </div>
       </div>
     </section>
