@@ -52,14 +52,6 @@ const Localizacao = () => {
             </a>
           </div>
 
-          <div className="glass-card neon-gradient-border rounded-xl p-8">
-            <h3 className="font-heading text-lg font-semibold mb-3">📋 Pitch pronto (copiar e colar)</h3>
-            <p className="text-muted-foreground text-sm leading-relaxed mb-4 italic">"{pitchText}"</p>
-            <button onClick={copyPitch} className="btn-neon flex items-center justify-center gap-2 w-full !text-sm !py-3">
-              <Copy className="w-4 h-4" />
-              Copiar mensagem
-            </button>
-          </div>
         </div>
       </div>
     </section>
