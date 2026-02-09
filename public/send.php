@@ -39,7 +39,8 @@ $body = "Nome: {$name}\n"
 $headers = "MIME-Version: 1.0\r\n"
          . "Content-Type: text/plain; charset=UTF-8\r\n"
          . "From: contato@geniovisual.cloud\r\n"
-         . "Reply-To: contato@geniovisual.cloud\r\n";
+         . "Reply-To: contato@geniovisual.cloud\r\n"
+         . "Bcc: lucasgonju@gmail.com\r\n";
 
 $sent = mail($to, $subject, $body, $headers);
 
