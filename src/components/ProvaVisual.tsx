@@ -13,7 +13,7 @@ const ProvaVisual = () => (
         loop
         muted
         playsInline
-        className="w-full h-full object-cover min-w-full min-h-full"
+        className="w-full h-full object-cover min-w-full min-h-full scale-[0.2] origin-center"
         aria-hidden
       />
       {/* Overlay escuro para legibilidade do texto */}
