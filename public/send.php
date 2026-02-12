@@ -93,6 +93,8 @@ mail($to, $subject, $bodyInterno, $headersInterno);
 $firstName = explode(' ', $name)[0];
 $waLink = "https://wa.me/{$whatsappGenio}?text=" . rawurlencode("Olá! Sou {$name}, acabei de solicitar uma proposta pelo site.");
 
+$logoUrl = "https://geniovisual.cloud/assets/logo-onqBbdQx.png";
+
 $htmlBody = <<<HTML
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -101,107 +103,121 @@ $htmlBody = <<<HTML
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
-<body style="margin:0;padding:0;background-color:#050505;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#f7f7f7;">
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:'Inter','Segoe UI',Arial,sans-serif;">
 
-  <!-- Wrapper -->
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#050505;">
-    <tr><td style="padding:48px 16px;" align="center">
+  <!-- Fundo branco -->
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f4f4f5;">
+    <tr><td style="padding:40px 16px;" align="center">
 
-      <!-- Container principal -->
+      <!-- Logo no topo, fora do card -->
       <table role="presentation" width="580" cellspacing="0" cellpadding="0" style="max-width:580px;width:100%;">
+        <tr><td align="center" style="padding:0 0 28px;">
+          <img src="{$logoUrl}" alt="Genio Visual" width="120" style="display:block;width:120px;height:auto;" />
+        </td></tr>
+      </table>
 
-        <!-- Barra gradiente topo -->
-        <tr><td style="height:3px;background:linear-gradient(90deg,#7c3aed,#3b82f6,#00e5ff);border-radius:12px 12px 0 0;"></td></tr>
+      <!-- Card escuro arredondado -->
+      <table role="presentation" width="580" cellspacing="0" cellpadding="0" style="max-width:580px;width:100%;border-radius:24px;overflow:hidden;">
 
-        <!-- Header -->
-        <tr><td style="padding:40px 40px 32px;background-color:#0d0d0d;text-align:center;">
-          <p style="margin:0;font-family:'Space Grotesk','Inter',sans-serif;font-size:24px;font-weight:700;letter-spacing:4px;color:#fff;">
-            GENIO VISUAL
+        <!-- Barra gradiente topo com efeito de movimento -->
+        <tr><td style="height:4px;background:linear-gradient(90deg,#7c3aed,#3b82f6,#00e5ff,#3b82f6,#7c3aed);background-size:200% 100%;border-radius:24px 24px 0 0;"></td></tr>
+
+        <!-- Header com fundo sutil de particulas -->
+        <tr><td style="padding:36px 40px 28px;background-color:#0a0a0a;background-image:radial-gradient(circle at 15% 50%,rgba(124,58,237,0.08) 0%,transparent 50%),radial-gradient(circle at 85% 30%,rgba(0,229,255,0.06) 0%,transparent 50%);text-align:center;">
+          <p style="margin:0;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:5px;color:#7c3aed;text-transform:uppercase;">
+            Genio Visual
           </p>
-          <p style="margin:6px 0 0;font-size:11px;letter-spacing:3px;color:#555;text-transform:uppercase;">
+          <p style="margin:4px 0 0;font-size:11px;letter-spacing:2px;color:#555;text-transform:uppercase;">
             OOH Premium &bull; Goiania/GO
           </p>
         </td></tr>
 
-        <!-- Linha separadora gradiente sutil -->
-        <tr><td style="height:1px;background:linear-gradient(90deg,transparent,#7c3aed44,#3b82f644,#00e5ff44,transparent);"></td></tr>
+        <!-- Corpo principal -->
+        <tr><td style="padding:40px 40px 20px;background-color:#0a0a0a;">
 
-        <!-- Corpo -->
-        <tr><td style="padding:44px 40px 36px;background-color:#0d0d0d;">
+          <!-- Saudacao com gradiente lateral decorativo -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 28px;">
+            <tr>
+              <td style="width:4px;background:linear-gradient(180deg,#7c3aed,#3b82f6,#00e5ff);border-radius:4px;"></td>
+              <td style="padding:0 0 0 20px;">
+                <p style="margin:0;font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:#ffffff;line-height:1.2;">
+                  Ola, {$firstName}!
+                </p>
+                <p style="margin:6px 0 0;font-size:14px;color:#888;">
+                  Que bom ter voce por aqui.
+                </p>
+              </td>
+            </tr>
+          </table>
 
-          <!-- Saudacao -->
-          <p style="margin:0 0 24px;font-family:'Space Grotesk','Inter',sans-serif;font-size:26px;font-weight:700;color:#fff;line-height:1.3;">
-            Ola, {$firstName}!
+          <p style="margin:0 0 14px;font-size:15px;line-height:1.8;color:#b0b0b0;">
+            Recebemos sua solicitacao de proposta e estamos muito felizes com o seu interesse em anunciar no maior painel de LED de Goiania.
           </p>
 
-          <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#b3b3b3;">
-            Recebemos sua solicitacao de proposta e ficamos muito felizes com seu interesse em anunciar no maior painel de LED de Goiania.
-          </p>
-
-          <p style="margin:0 0 32px;font-size:15px;line-height:1.8;color:#b3b3b3;">
+          <p style="margin:0 0 32px;font-size:15px;line-height:1.8;color:#b0b0b0;">
             Nossa equipe ja esta preparando a melhor proposta para voce. Em breve entraremos em contato com todos os detalhes.
           </p>
 
-          <!-- Card resumo -->
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 32px;">
-            <tr><td style="padding:24px 28px;background-color:#111;border:1px solid #1a1a1a;border-radius:12px;">
-              <p style="margin:0 0 16px;font-family:'Space Grotesk','Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;color:#7c3aed;text-transform:uppercase;">
-                Seu pedido
+        </td></tr>
+
+        <!-- Card resumo dentro do card principal -->
+        <tr><td style="padding:0 40px 32px;background-color:#0a0a0a;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:16px;overflow:hidden;">
+            <!-- Borda gradiente do card interno -->
+            <tr><td style="height:2px;background:linear-gradient(90deg,#7c3aed,#3b82f6,#00e5ff);"></td></tr>
+            <tr><td style="padding:24px 28px;background-color:#111111;">
+              <p style="margin:0 0 16px;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;color:#00e5ff;text-transform:uppercase;">
+                Resumo do pedido
               </p>
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td style="padding:8px 0;border-bottom:1px solid #1a1a1a;color:#666;font-size:13px;width:90px;">Plano</td>
-                  <td style="padding:8px 0;border-bottom:1px solid #1a1a1a;color:#fff;font-size:14px;font-weight:600;">{$plano}</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #1c1c1c;color:#666;font-size:13px;width:90px;">Plano</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #1c1c1c;color:#fff;font-size:14px;font-weight:600;">{$plano}</td>
                 </tr>
                 <tr>
-                  <td style="padding:8px 0;border-bottom:1px solid #1a1a1a;color:#666;font-size:13px;">Empresa</td>
-                  <td style="padding:8px 0;border-bottom:1px solid #1a1a1a;color:#fff;font-size:14px;">{$empresa}</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #1c1c1c;color:#666;font-size:13px;">Empresa</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #1c1c1c;color:#fff;font-size:14px;">{$empresa}</td>
                 </tr>
                 <tr>
-                  <td style="padding:8px 0;color:#666;font-size:13px;">E-mail</td>
-                  <td style="padding:8px 0;color:#ccc;font-size:14px;">{$email}</td>
+                  <td style="padding:10px 0;color:#666;font-size:13px;">E-mail</td>
+                  <td style="padding:10px 0;color:#ccc;font-size:14px;">{$email}</td>
                 </tr>
               </table>
             </td></tr>
           </table>
+        </td></tr>
 
-          <!-- Separador -->
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 32px;">
-            <tr><td style="height:1px;background:linear-gradient(90deg,transparent,#1a1a1a,transparent);"></td></tr>
-          </table>
+        <!-- Secao WhatsApp com fundo gradiente sutil -->
+        <tr><td style="padding:0 40px 40px;background-color:#0a0a0a;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:16px;overflow:hidden;">
+            <tr><td style="padding:32px;background-image:radial-gradient(circle at 30% 50%,rgba(124,58,237,0.1) 0%,transparent 60%),radial-gradient(circle at 70% 50%,rgba(0,229,255,0.08) 0%,transparent 60%);background-color:#0f0f0f;text-align:center;">
 
-          <!-- WhatsApp CTA -->
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-            <tr><td style="text-align:center;padding:0 0 8px;">
-              <p style="margin:0 0 8px;font-family:'Space Grotesk','Inter',sans-serif;font-size:18px;font-weight:600;color:#fff;">
+              <p style="margin:0 0 6px;font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#fff;">
                 Tem pressa?
               </p>
-              <p style="margin:0 0 24px;font-size:14px;color:#888;">
-                Fale direto com nossa equipe pelo WhatsApp.
+              <p style="margin:0 0 24px;font-size:14px;color:#888;line-height:1.6;">
+                Fale direto com nossa equipe agora mesmo.
               </p>
 
-              <!-- Botao gradiente -->
+              <!-- Botao com gradiente -->
               <table role="presentation" cellspacing="0" cellpadding="0" align="center">
-                <tr><td style="border-radius:12px;background:linear-gradient(90deg,#7c3aed,#3b82f6);">
-                  <a href="{$waLink}" target="_blank" style="display:inline-block;padding:16px 40px;font-family:'Space Grotesk','Inter',sans-serif;font-size:15px;font-weight:600;color:#fff;text-decoration:none;letter-spacing:0.5px;">
+                <tr><td style="border-radius:14px;background:linear-gradient(135deg,#7c3aed,#3b82f6,#00e5ff);background-size:200% 200%;">
+                  <a href="{$waLink}" target="_blank" style="display:inline-block;padding:16px 44px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#fff;text-decoration:none;letter-spacing:0.5px;">
                     Chamar no WhatsApp
                   </a>
                 </td></tr>
               </table>
 
-              <p style="margin:20px 0 0;font-size:13px;color:#555;">
+              <p style="margin:16px 0 0;font-size:13px;color:#555;letter-spacing:1px;">
                 +55 21 99595-2526
               </p>
+
             </td></tr>
           </table>
-
         </td></tr>
 
-        <!-- Linha separadora gradiente sutil -->
-        <tr><td style="height:1px;background:linear-gradient(90deg,transparent,#7c3aed44,#3b82f644,#00e5ff44,transparent);"></td></tr>
-
-        <!-- Footer -->
-        <tr><td style="padding:28px 40px;background-color:#0d0d0d;text-align:center;border-radius:0 0 12px 12px;">
+        <!-- Footer dentro do card -->
+        <tr><td style="padding:24px 40px;background-color:#080808;text-align:center;border-radius:0 0 24px 24px;">
           <p style="margin:0 0 4px;font-size:12px;color:#444;">
             Genio Visual &bull; Paineis de LED em Goiania/GO
           </p>
@@ -210,9 +226,15 @@ $htmlBody = <<<HTML
           </p>
         </td></tr>
 
-        <!-- Barra gradiente inferior -->
-        <tr><td style="height:3px;background:linear-gradient(90deg,#7c3aed,#3b82f6,#00e5ff);border-radius:0 0 12px 12px;"></td></tr>
+      </table>
 
+      <!-- Texto legal fora do card -->
+      <table role="presentation" width="580" cellspacing="0" cellpadding="0" style="max-width:580px;width:100%;">
+        <tr><td style="padding:24px 0 0;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#999;">
+            Voce recebeu este e-mail porque solicitou uma proposta em geniovisual.cloud
+          </p>
+        </td></tr>
       </table>
 
     </td></tr>
