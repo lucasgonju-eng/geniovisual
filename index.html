@@ -30,5 +30,15 @@
     <!-- End Google Tag Manager (noscript) -->
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Analytics interno -->
+    <script>
+    (function(){
+      try {
+        fetch('/track.php',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({page:location.pathname,referrer:document.referrer,event:'pageview'})
+        });
+      } catch(e){}
+    })();
+    </script>
   </body>
 </html>
