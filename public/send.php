@@ -123,7 +123,7 @@ $htmlBody = <<<HTML
         <tr><td style="height:4px;background:linear-gradient(90deg,#7c3aed,#3b82f6,#00e5ff,#3b82f6,#7c3aed);background-size:200% 100%;border-radius:24px 24px 0 0;"></td></tr>
 
         <!-- Header com fundo sutil de particulas -->
-        <tr><td style="padding:36px 40px 28px;background-color:#0a0a0a;background-image:radial-gradient(circle at 15% 50%,rgba(124,58,237,0.08) 0%,transparent 50%),radial-gradient(circle at 85% 30%,rgba(0,229,255,0.06) 0%,transparent 50%);text-align:center;">
+        <tr><td style="padding:36px 40px 28px;background-color:#0a0a0a;text-align:center;">
           <p style="margin:0;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:5px;color:#7c3aed;text-transform:uppercase;">
             Genio Visual
           </p>
@@ -190,7 +190,7 @@ $htmlBody = <<<HTML
         <!-- Secao WhatsApp com fundo gradiente sutil -->
         <tr><td style="padding:0 40px 40px;background-color:#0a0a0a;">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:16px;overflow:hidden;">
-            <tr><td style="padding:32px;background-image:radial-gradient(circle at 30% 50%,rgba(124,58,237,0.1) 0%,transparent 60%),radial-gradient(circle at 70% 50%,rgba(0,229,255,0.08) 0%,transparent 60%);background-color:#0a0a0a;text-align:center;">
+            <tr><td style="padding:32px;background-color:#0a0a0a;text-align:center;">
 
               <p style="margin:0 0 6px;font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#fff;">
                 Tem pressa?
