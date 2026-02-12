@@ -7,6 +7,7 @@ import Planos from "@/components/Planos";
 import PainelFoto from "@/components/PainelFoto";
 import Localizacao from "@/components/Localizacao";
 import FAQ from "@/components/FAQ";
+import PainelAnuncie from "@/components/PainelAnuncie";
 import Formulario from "@/components/Formulario";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
@@ -22,6 +23,7 @@ const Index = () => (
     <PainelFoto />
     <Localizacao />
     <FAQ />
+    <PainelAnuncie />
     <Formulario />
     <Footer />
     <WhatsAppFloat />
