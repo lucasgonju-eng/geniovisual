@@ -69,7 +69,7 @@ file_put_contents($crmFile, json_encode($leads, JSON_PRETTY_PRINT | JSON_UNESCAP
 // --- Enviar e-mail interno (para a equipe) ---
 $to = 'lucasgonju@gmail.com';
 $from = 'contato@geniovisual.cloud';
-$whatsappGenio = '5521995952526';
+$whatsappGenio = '5562995077995';
 
 $bodyInterno = "=== Nova solicitação de proposta ===\n\n"
       . "Nome: {$name}\n"
@@ -209,7 +209,7 @@ $htmlBody = <<<HTML
               </table>
 
               <p style="margin:16px 0 0;font-size:13px;color:#555;letter-spacing:1px;">
-                +55 21 99595-2526
+                (62) 99507-7995
               </p>
 
             </td></tr>

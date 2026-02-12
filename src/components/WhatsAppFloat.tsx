@@ -1,6 +1,6 @@
 import { MessageCircle } from "lucide-react";
 
-const WHATSAPP_NUMBER = "+5521995952526";
+const WHATSAPP_NUMBER = "+5562995077995";
 const WHATSAPP_MSG = encodeURIComponent("Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta.");
 
 const WhatsAppFloat = () => (
