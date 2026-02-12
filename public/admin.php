@@ -410,14 +410,12 @@ function formatWhatsApp($number) {
         <h4 class="text-sm font-semibold text-cyan-400 mb-2">Como configurar o Google Analytics 4 via GTM:</h4>
         <ol class="text-zinc-400 text-sm space-y-1.5 list-decimal list-inside">
           <li>Acesse <a href="https://analytics.google.com/" target="_blank" class="text-cyan-400 hover:underline">analytics.google.com</a> e crie uma propriedade GA4</li>
-          <li>Copie o <strong class="text-zinc-300">ID de medição</strong> (formato: G-XXXXXXXXXX)</li>
-          <li>Acesse <a href="https://tagmanager.google.com/" target="_blank" class="text-cyan-400 hover:underline">tagmanager.google.com</a> → container GTM-WQLBZW9R</li>
-          <li>Clique <strong class="text-zinc-300">Tags → Nova → Google Analytics: Configuração do GA4</strong></li>
-          <li>Cole o ID de medição (G-XXXXXXXXXX)</li>
-          <li>Em Acionador, selecione <strong class="text-zinc-300">"All Pages"</strong></li>
-          <li>Salve e clique <strong class="text-zinc-300">"Enviar"</strong> (publicar)</li>
+          <li>ID de medição: <strong class="text-cyan-400">G-K1LSSMV8LQ</strong> (já configurado)</li>
+          <li>Container GTM: <strong class="text-cyan-400">GTM-WQLBZW9R</strong> (já instalado no site)</li>
+          <li>No GTM: <strong class="text-zinc-300">Tags → Nova → Tag do Google → ID: G-K1LSSMV8LQ</strong></li>
+          <li>Acionador: <strong class="text-zinc-300">"All Pages"</strong> → Salvar → Enviar</li>
         </ol>
-        <p class="text-zinc-500 text-xs mt-3">Após publicar, os dados do GA4 começam a aparecer em 24-48h no Google Analytics.</p>
+        <p class="text-green-400 text-xs mt-3">✓ GTM e GA4 configurados. Os dados aparecem em Relatórios → Tempo real no GA4.</p>
       </div>
     </div>
 
