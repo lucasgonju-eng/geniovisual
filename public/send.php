@@ -96,66 +96,128 @@ $waLink = "https://wa.me/{$whatsappGenio}?text=" . rawurlencode("Olá! Sou {$nam
 $htmlBody = <<<HTML
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:'Segoe UI',Arial,sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#0a0a0a;padding:40px 0;">
-    <tr><td align="center">
-      <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#050505;font-family:'Inter','Segoe UI',Arial,sans-serif;color:#f7f7f7;">
 
-        <!-- Logo / Header -->
-        <tr><td style="padding:30px 40px 20px;text-align:center;border-bottom:1px solid #1a1a2e;">
-          <h1 style="margin:0;font-size:28px;letter-spacing:3px;">
-            <span style="background:linear-gradient(135deg,#00e5ff,#536dfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">GÊNIO VISUAL</span>
-          </h1>
-          <p style="margin:4px 0 0;color:#666;font-size:12px;letter-spacing:2px;">OOH Premium • Goiânia/GO</p>
+  <!-- Wrapper -->
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#050505;">
+    <tr><td style="padding:48px 16px;" align="center">
+
+      <!-- Container principal -->
+      <table role="presentation" width="580" cellspacing="0" cellpadding="0" style="max-width:580px;width:100%;">
+
+        <!-- Barra gradiente topo -->
+        <tr><td style="height:3px;background:linear-gradient(90deg,#7c3aed,#3b82f6,#00e5ff);border-radius:12px 12px 0 0;"></td></tr>
+
+        <!-- Header -->
+        <tr><td style="padding:40px 40px 32px;background-color:#0d0d0d;text-align:center;">
+          <p style="margin:0;font-family:'Space Grotesk','Inter',sans-serif;font-size:24px;font-weight:700;letter-spacing:4px;color:#fff;">
+            GENIO VISUAL
+          </p>
+          <p style="margin:6px 0 0;font-size:11px;letter-spacing:3px;color:#555;text-transform:uppercase;">
+            OOH Premium &bull; Goiania/GO
+          </p>
         </td></tr>
 
+        <!-- Linha separadora gradiente sutil -->
+        <tr><td style="height:1px;background:linear-gradient(90deg,transparent,#7c3aed44,#3b82f644,#00e5ff44,transparent);"></td></tr>
+
         <!-- Corpo -->
-        <tr><td style="padding:40px;background-color:#111;border-left:1px solid #1a1a2e;border-right:1px solid #1a1a2e;">
-          <h2 style="margin:0 0 20px;color:#fff;font-size:22px;">Olá, {$firstName}! 👋</h2>
-          <p style="color:#ccc;font-size:15px;line-height:1.7;margin:0 0 20px;">
-            Recebemos sua solicitação de proposta e ficamos muito felizes com seu interesse!
-          </p>
-          <p style="color:#ccc;font-size:15px;line-height:1.7;margin:0 0 20px;">
-            Nossa equipe já está analisando o seu pedido e <strong style="color:#00e5ff;">entraremos em contato em breve</strong> com todos os detalhes.
+        <tr><td style="padding:44px 40px 36px;background-color:#0d0d0d;">
+
+          <!-- Saudacao -->
+          <p style="margin:0 0 24px;font-family:'Space Grotesk','Inter',sans-serif;font-size:26px;font-weight:700;color:#fff;line-height:1.3;">
+            Ola, {$firstName}!
           </p>
 
-          <!-- Resumo -->
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#0a0a1a;border:1px solid #1a1a2e;border-radius:12px;margin:24px 0;">
-            <tr><td style="padding:20px;">
-              <p style="margin:0 0 8px;color:#666;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Resumo do pedido</p>
-              <p style="margin:0 0 6px;color:#ccc;font-size:14px;">📋 <strong style="color:#fff;">Plano:</strong> {$plano}</p>
-              <p style="margin:0;color:#ccc;font-size:14px;">🏢 <strong style="color:#fff;">Empresa:</strong> {$empresa}</p>
+          <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#b3b3b3;">
+            Recebemos sua solicitacao de proposta e ficamos muito felizes com seu interesse em anunciar no maior painel de LED de Goiania.
+          </p>
+
+          <p style="margin:0 0 32px;font-size:15px;line-height:1.8;color:#b3b3b3;">
+            Nossa equipe ja esta preparando a melhor proposta para voce. Em breve entraremos em contato com todos os detalhes.
+          </p>
+
+          <!-- Card resumo -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 32px;">
+            <tr><td style="padding:24px 28px;background-color:#111;border:1px solid #1a1a1a;border-radius:12px;">
+              <p style="margin:0 0 16px;font-family:'Space Grotesk','Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;color:#7c3aed;text-transform:uppercase;">
+                Seu pedido
+              </p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="padding:8px 0;border-bottom:1px solid #1a1a1a;color:#666;font-size:13px;width:90px;">Plano</td>
+                  <td style="padding:8px 0;border-bottom:1px solid #1a1a1a;color:#fff;font-size:14px;font-weight:600;">{$plano}</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0;border-bottom:1px solid #1a1a1a;color:#666;font-size:13px;">Empresa</td>
+                  <td style="padding:8px 0;border-bottom:1px solid #1a1a1a;color:#fff;font-size:14px;">{$empresa}</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0;color:#666;font-size:13px;">E-mail</td>
+                  <td style="padding:8px 0;color:#ccc;font-size:14px;">{$email}</td>
+                </tr>
+              </table>
             </td></tr>
           </table>
 
-          <!-- Destaque WhatsApp -->
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:30px 0 10px;">
-            <tr><td style="padding:24px;background:linear-gradient(135deg,#0a2a1a,#0a1a2a);border:1px solid #1a3a2a;border-radius:12px;text-align:center;">
-              <p style="margin:0 0 12px;color:#ccc;font-size:15px;">
-                Tem pressa? Fale direto com a gente! 🚀
+          <!-- Separador -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 32px;">
+            <tr><td style="height:1px;background:linear-gradient(90deg,transparent,#1a1a1a,transparent);"></td></tr>
+          </table>
+
+          <!-- WhatsApp CTA -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+            <tr><td style="text-align:center;padding:0 0 8px;">
+              <p style="margin:0 0 8px;font-family:'Space Grotesk','Inter',sans-serif;font-size:18px;font-weight:600;color:#fff;">
+                Tem pressa?
               </p>
-              <a href="{$waLink}" target="_blank" style="display:inline-block;background-color:#25D366;color:#fff;font-weight:bold;font-size:15px;text-decoration:none;padding:14px 32px;border-radius:50px;">
-                💬 Chamar no WhatsApp
-              </a>
-              <p style="margin:12px 0 0;color:#888;font-size:13px;">
+              <p style="margin:0 0 24px;font-size:14px;color:#888;">
+                Fale direto com nossa equipe pelo WhatsApp.
+              </p>
+
+              <!-- Botao gradiente -->
+              <table role="presentation" cellspacing="0" cellpadding="0" align="center">
+                <tr><td style="border-radius:12px;background:linear-gradient(90deg,#7c3aed,#3b82f6);">
+                  <a href="{$waLink}" target="_blank" style="display:inline-block;padding:16px 40px;font-family:'Space Grotesk','Inter',sans-serif;font-size:15px;font-weight:600;color:#fff;text-decoration:none;letter-spacing:0.5px;">
+                    Chamar no WhatsApp
+                  </a>
+                </td></tr>
+              </table>
+
+              <p style="margin:20px 0 0;font-size:13px;color:#555;">
                 +55 21 99595-2526
               </p>
             </td></tr>
           </table>
+
         </td></tr>
 
+        <!-- Linha separadora gradiente sutil -->
+        <tr><td style="height:1px;background:linear-gradient(90deg,transparent,#7c3aed44,#3b82f644,#00e5ff44,transparent);"></td></tr>
+
         <!-- Footer -->
-        <tr><td style="padding:24px 40px;text-align:center;border-top:1px solid #1a1a2e;">
-          <p style="margin:0 0 4px;color:#555;font-size:12px;">Gênio Visual • Painéis de LED em Goiânia/GO</p>
-          <p style="margin:0;color:#444;font-size:11px;">
-            <a href="https://geniovisual.cloud" style="color:#536dfe;text-decoration:none;">geniovisual.cloud</a>
+        <tr><td style="padding:28px 40px;background-color:#0d0d0d;text-align:center;border-radius:0 0 12px 12px;">
+          <p style="margin:0 0 4px;font-size:12px;color:#444;">
+            Genio Visual &bull; Paineis de LED em Goiania/GO
+          </p>
+          <p style="margin:0;">
+            <a href="https://geniovisual.cloud" style="font-size:12px;color:#3b82f6;text-decoration:none;">geniovisual.cloud</a>
           </p>
         </td></tr>
 
+        <!-- Barra gradiente inferior -->
+        <tr><td style="height:3px;background:linear-gradient(90deg,#7c3aed,#3b82f6,#00e5ff);border-radius:0 0 12px 12px;"></td></tr>
+
       </table>
+
     </td></tr>
   </table>
+
 </body>
 </html>
 HTML;
