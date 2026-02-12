@@ -29,6 +29,9 @@ const Footer = () => (
         <p className="text-muted-foreground text-xs max-w-2xl mx-auto">
           Desenvolvido por Lucas Gonçalves Júnior - 2026
         </p>
+        <a href="/admin.php" className="text-muted-foreground/30 hover:text-muted-foreground/60 text-[10px] mt-2 inline-block transition-colors">
+          admin
+        </a>
       </div>
     </div>
   </footer>

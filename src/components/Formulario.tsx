@@ -13,6 +13,7 @@ const Formulario = () => {
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({
     name: "",
+    email: "",
     whatsapp: "",
     empresa: "",
     plano: "",
@@ -23,7 +24,7 @@ const Formulario = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.whatsapp || !form.consent) {
+    if (!form.name || !form.email || !form.whatsapp || !form.consent) {
       toast.error("Preencha os campos obrigatórios.");
       return;
     }
@@ -37,6 +38,7 @@ const Formulario = () => {
         },
         body: JSON.stringify({
           nome: form.name,
+          email: form.email,
           whatsapp: form.whatsapp,
           empresa: form.empresa || "Não informado",
           plano: form.plano || "Não informado",
@@ -99,6 +101,17 @@ const Formulario = () => {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="w-full rounded-lg bg-muted border border-border px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="Seu nome"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1.5">E-mail *</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="w-full rounded-lg bg-muted border border-border px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="seu@email.com"
                 required
               />
             </div>
