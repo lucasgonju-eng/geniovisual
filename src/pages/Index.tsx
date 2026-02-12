@@ -4,6 +4,7 @@ import ProvaVisual from "@/components/ProvaVisual";
 import Vantagens from "@/components/Vantagens";
 import Credibilidade from "@/components/Credibilidade";
 import Planos from "@/components/Planos";
+import PainelFoto from "@/components/PainelFoto";
 import Localizacao from "@/components/Localizacao";
 import FAQ from "@/components/FAQ";
 import Formulario from "@/components/Formulario";
@@ -18,6 +19,7 @@ const Index = () => (
     <Vantagens />
     <Credibilidade />
     <Planos />
+    <PainelFoto />
     <Localizacao />
     <FAQ />
     <Formulario />
