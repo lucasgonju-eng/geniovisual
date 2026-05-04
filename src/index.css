@@ -61,6 +61,7 @@
 
   html {
     scroll-behavior: smooth;
+    scroll-padding-top: 108px;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -155,6 +156,19 @@
       radial-gradient(1px 1px at 130px 80px, hsl(var(--neon-purple) / 0.15), transparent),
       radial-gradient(1px 1px at 160px 120px, hsl(var(--neon-blue) / 0.2), transparent);
     background-size: 200px 200px;
+  }
+}
+
+@media (max-width: 767px) {
+  html {
+    scroll-padding-top: 92px;
+  }
+
+  .btn-neon,
+  .btn-neon-outline {
+    width: 100%;
+    padding: 0.95rem 1.25rem;
+    font-size: 1rem;
   }
 }
 

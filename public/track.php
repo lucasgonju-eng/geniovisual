@@ -1,19 +1,24 @@
 <?php
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+require_once dirname(__DIR__) . '/private/bootstrap.php';
+
+header('Content-Type: application/json; charset=utf-8');
+header('Access-Control-Allow-Origin: https://geniovisual.cloud');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('X-Robots-Tag: noindex, nofollow', true);
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+  http_response_code(204);
+  exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  http_response_code(405);
-  echo json_encode(['ok' => false]);
-  exit;
+  json_response(['ok' => false, 'error' => 'Método não permitido.'], 405);
 }
 
 $raw = file_get_contents('php://input');
 $data = json_decode($raw, true);
 if (!is_array($data)) {
-  http_response_code(400);
-  echo json_encode(['ok' => false]);
-  exit;
+  json_response(['ok' => false, 'error' => 'JSON inválido.'], 400);
 }
 
 date_default_timezone_set('America/Sao_Paulo');
@@ -50,21 +55,6 @@ $visit = [
   'date'      => date('Y-m-d'),
 ];
 
-$dir = __DIR__ . '/crm-data';
-if (!is_dir($dir)) mkdir($dir, 0755, true);
+append_json_record(__DIR__ . '/crm-data/analytics.json', $visit, 10000);
 
-$file = $dir . '/analytics.json';
-$visits = [];
-if (file_exists($file)) {
-  $visits = json_decode(file_get_contents($file), true) ?: [];
-}
-
-$visits[] = $visit;
-
-// Manter apenas últimos 90 dias
-$cutoff = date('Y-m-d', strtotime('-90 days'));
-$visits = array_values(array_filter($visits, fn($v) => ($v['date'] ?? '') >= $cutoff));
-
-file_put_contents($file, json_encode($visits, JSON_UNESCAPED_UNICODE));
-
-echo json_encode(['ok' => true]);
+json_response(['ok' => true]);

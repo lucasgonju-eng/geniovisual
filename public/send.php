@@ -1,19 +1,18 @@
 <?php
+require_once dirname(__DIR__) . '/private/bootstrap.php';
+
 header('Content-Type: application/json; charset=utf-8');
+header('X-Robots-Tag: noindex, nofollow', true);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  http_response_code(405);
-  echo json_encode(['ok' => false, 'error' => 'Method not allowed']);
-  exit;
+  json_response(['ok' => false, 'error' => 'Método não permitido.'], 405);
 }
 
 $raw = file_get_contents('php://input');
 $data = json_decode($raw, true);
 
 if (!is_array($data)) {
-  http_response_code(400);
-  echo json_encode(['ok' => false, 'error' => 'Invalid JSON']);
-  exit;
+  json_response(['ok' => false, 'error' => 'Corpo da requisição inválido.'], 400);
 }
 
 $name     = trim($data['nome'] ?? '');
@@ -26,22 +25,7 @@ $subjectBase = trim($data['subject'] ?? 'Solicitacao de proposta');
 $subject = "{$subjectBase} (WhatsApp: {$whatsapp})";
 
 if ($name === '' || $email === '' || $whatsapp === '') {
-  http_response_code(422);
-  echo json_encode(['ok' => false, 'error' => 'Missing required fields']);
-  exit;
-}
-
-// --- CRM: salvar lead em arquivo JSON ---
-$crmDir = __DIR__ . '/crm-data';
-if (!is_dir($crmDir)) {
-  mkdir($crmDir, 0755, true);
-}
-
-$crmFile = $crmDir . '/leads.json';
-$leads = [];
-if (file_exists($crmFile)) {
-  $content = file_get_contents($crmFile);
-  $leads = json_decode($content, true) ?: [];
+  json_response(['ok' => false, 'error' => 'Preencha nome, e-mail e WhatsApp.'], 422);
 }
 
 $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'desconhecido';
@@ -63,12 +47,12 @@ $lead = [
   'timezone'  => 'America/Sao_Paulo',
 ];
 
-$leads[] = $lead;
-file_put_contents($crmFile, json_encode($leads, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+append_json_record(__DIR__ . '/crm-data/leads.json', $lead, 5000);
 
 // --- Enviar e-mail interno (para a equipe) ---
-$to = 'lucasgonju@gmail.com';
-$from = 'contato@geniovisual.cloud';
+$to = app_config('lead_recipient_email', '') ?: app_config('contact_email', 'contato@geniovisual.cloud');
+$from = app_config('contact_email', 'contato@geniovisual.cloud');
+$appUrl = rtrim((string) app_config('app_url', 'https://geniovisual.cloud'), '/');
 $whatsappGenio = '5562995077995';
 
 $bodyInterno = "=== Nova solicitação de proposta ===\n\n"
@@ -87,13 +71,15 @@ $headersInterno = "MIME-Version: 1.0\r\n"
          . "Reply-To: {$email}\r\n"
          . "X-Lead-WhatsApp: {$whatsapp}\r\n";
 
-mail($to, $subject, $bodyInterno, $headersInterno);
+if ($to !== '') {
+  mail($to, $subject, $bodyInterno, $headersInterno);
+}
 
 // --- Enviar e-mail HTML para o cliente ---
 $firstName = explode(' ', $name)[0];
 $waLink = "https://wa.me/{$whatsappGenio}?text=" . rawurlencode("Olá! Sou {$name}, acabei de solicitar uma proposta pelo site.");
 
-$logoUrl = "https://geniovisual.cloud/assets/logo-onqBbdQx.png";
+$logoUrl = "{$appUrl}/painel-anuncie.png";
 
 $htmlBody = <<<HTML
 <!DOCTYPE html>
@@ -222,7 +208,7 @@ $htmlBody = <<<HTML
             Genio Visual &bull; Paineis de LED em Goiania/GO
           </p>
           <p style="margin:0;">
-            <a href="https://geniovisual.cloud" style="font-size:12px;color:#3b82f6;text-decoration:none;">geniovisual.cloud</a>
+            <a href="{$appUrl}" style="font-size:12px;color:#3b82f6;text-decoration:none;">geniovisual.cloud</a>
           </p>
         </td></tr>
 
@@ -249,8 +235,8 @@ $headersCliente = "MIME-Version: 1.0\r\n"
   . "From: Genio Visual <{$from}>\r\n"
   . "Reply-To: {$from}\r\n";
 
-$subjectCliente = "Recebemos sua solicitação, {$firstName}! ✨ - Gênio Visual";
+$subjectCliente = "Recebemos sua solicitação, {$firstName}! - Gênio Visual";
 
 mail($email, $subjectCliente, $htmlBody, $headersCliente);
 
-echo json_encode(['ok' => true]);
+json_response(['ok' => true, 'message' => 'Proposta enviada com sucesso.']);

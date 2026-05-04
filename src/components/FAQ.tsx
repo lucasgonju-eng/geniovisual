@@ -6,6 +6,10 @@ const faqs = [
     a: "Sua marca aparece 24 vezes por hora, garantindo alta frequência e fixação junto ao público que transita pela via.",
   },
   {
+    q: "Por que o valor mensal diminui nos contratos mais longos?",
+    a: "Porque campanhas de prazo maior geram mais previsibilidade operacional e permitem planejamento comercial contínuo. Em troca, sua marca ganha menor custo mensal e mais consistência de exposição.",
+  },
+  {
     q: "Posso trocar meu vídeo/arte durante o contrato?",
     a: "Sim! Dependendo do plano, você pode trocar seu criativo com facilidade. Nos planos mais completos, oferecemos calendário de trocas e suporte criativo.",
   },
@@ -16,6 +20,10 @@ const faqs = [
   {
     q: "Quanto tempo leva para começar a rodar?",
     a: "Após a aprovação do material, sua campanha pode começar a rodar em até 48 horas úteis.",
+  },
+  {
+    q: "Recebo ajuda para escolher o melhor plano?",
+    a: "Sim. Você pode falar no WhatsApp para entender qual prazo e formato fazem mais sentido para sua meta, verba e momento de campanha.",
   },
 ];
 

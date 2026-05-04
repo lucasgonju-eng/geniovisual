@@ -1,22 +1,49 @@
 <?php
+require_once dirname(__DIR__) . '/private/bootstrap.php';
+
+session_set_cookie_params([
+  'httponly' => true,
+  'samesite' => 'Strict',
+  'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+]);
 session_start();
 date_default_timezone_set('America/Sao_Paulo');
+header('X-Robots-Tag: noindex, nofollow', true);
 
-// --- Credenciais ---
-define('ADMIN_USER', 'admin');
-define('ADMIN_PASS_HASH', password_hash('Gqlk1110', PASSWORD_DEFAULT));
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+$adminUser = (string) app_config('admin_user', '');
+$adminPassHash = (string) app_config('admin_password_hash', '');
+$adminConfigured = admin_is_configured();
+$loginError = '';
+
+$isValidCsrf = static function (): bool {
+  return hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '');
+};
 
 // --- Logout ---
-if (isset($_GET['logout'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout']) && !empty($_SESSION['admin_logged'])) {
+  if (!$isValidCsrf()) {
+    http_response_code(403);
+    exit('Sessão expirada. Recarregue a página e tente novamente.');
+  }
+
+  $_SESSION = [];
   session_destroy();
   header('Location: admin.php');
   exit;
 }
 
 // --- Login ---
-$loginError = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
-  if ($_POST['user'] === ADMIN_USER && password_verify($_POST['pass'], ADMIN_PASS_HASH)) {
+  if (!$isValidCsrf()) {
+    $loginError = 'Sessão expirada. Atualize a página e tente novamente.';
+  } elseif (!$adminConfigured) {
+    $loginError = 'Admin não configurado. Defina as credenciais em `preview/private/app-config.local.php` ou em variáveis de ambiente.';
+  } elseif (hash_equals($adminUser, (string) ($_POST['user'] ?? '')) && password_verify((string) ($_POST['pass'] ?? ''), $adminPassHash)) {
+    session_regenerate_id(true);
     $_SESSION['admin_logged'] = true;
     header('Location: admin.php');
     exit;
@@ -26,15 +53,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 }
 
 // --- Ação: excluir lead ---
-if (isset($_GET['delete']) && !empty($_SESSION['admin_logged'])) {
-  $idToDelete = $_GET['delete'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete']) && !empty($_SESSION['admin_logged'])) {
+  if (!$isValidCsrf()) {
+    http_response_code(403);
+    exit('Sessão expirada. Recarregue a página e tente novamente.');
+  }
+
+  $idToDelete = trim((string) ($_POST['delete'] ?? ''));
   $crmFile = __DIR__ . '/crm-data/leads.json';
-  if (file_exists($crmFile)) {
+  if ($idToDelete !== '' && file_exists($crmFile)) {
     $leads = json_decode(file_get_contents($crmFile), true) ?: [];
-    $leads = array_values(array_filter($leads, fn($l) => $l['id'] !== $idToDelete));
+    $leads = array_values(array_filter($leads, fn($l) => ($l['id'] ?? '') !== $idToDelete));
     file_put_contents($crmFile, json_encode($leads, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
   }
-  header('Location: admin.php');
+  header('Location: admin.php?tab=crm');
   exit;
 }
 
@@ -56,8 +88,14 @@ if (empty($_SESSION['admin_logged'])):
     <?php if ($loginError): ?>
       <p class="text-red-400 text-sm text-center mb-4"><?= htmlspecialchars($loginError) ?></p>
     <?php endif; ?>
+    <?php if (!$adminConfigured): ?>
+      <p class="text-zinc-400 text-sm text-center mb-4">
+        Configure o arquivo <code class="text-cyan-400">preview/private/app-config.local.php</code> para liberar o acesso.
+      </p>
+    <?php endif; ?>
     <form method="POST">
       <input type="hidden" name="login" value="1">
+      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
       <div class="mb-4">
         <label class="block text-zinc-400 text-sm mb-1">Usuário</label>
         <input type="text" name="user" required
@@ -71,6 +109,7 @@ if (empty($_SESSION['admin_logged'])):
           placeholder="••••••••">
       </div>
       <button type="submit"
+        <?= !$adminConfigured ? 'disabled' : '' ?>
         class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold py-3 rounded-lg hover:opacity-90 transition">
         Entrar
       </button>
@@ -217,9 +256,12 @@ function formatWhatsApp($number) {
       </div>
       <div class="flex items-center gap-4">
         <a href="/" class="text-zinc-400 hover:text-white text-sm transition">← Site</a>
-        <a href="admin.php?logout=1" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-lg text-sm transition">
-          Sair
-        </a>
+        <form method="POST">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+          <button type="submit" name="logout" value="1" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-lg text-sm transition">
+            Sair
+          </button>
+        </form>
       </div>
     </div>
     <!-- Tabs -->
@@ -496,11 +538,12 @@ function formatWhatsApp($number) {
                 <td class="py-4 px-4 text-sm text-zinc-400 whitespace-nowrap"><?= htmlspecialchars($lead['data_hora'] ?? '') ?></td>
                 <td class="py-4 px-4 text-sm text-zinc-500"><?= htmlspecialchars($lead['ip'] ?? '') ?></td>
                 <td class="py-4 px-4">
-                  <a href="admin.php?tab=crm&delete=<?= urlencode($lead['id'] ?? '') ?>"
-                     onclick="return confirm('Excluir este lead?')"
-                     class="text-red-400 hover:text-red-300 text-sm transition">
-                    Excluir
-                  </a>
+                  <form method="POST" onsubmit="return confirm('Excluir este lead?')" class="inline">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                    <button type="submit" name="delete" value="<?= htmlspecialchars($lead['id'] ?? '') ?>" class="text-red-400 hover:text-red-300 text-sm transition">
+                      Excluir
+                    </button>
+                  </form>
                 </td>
               </tr>
             <?php endforeach; ?>
@@ -544,11 +587,12 @@ function formatWhatsApp($number) {
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.319 0-4.47-.644-6.326-1.758l-.442-.269-2.646.887.887-2.646-.269-.442A9.956 9.956 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
                 WhatsApp
               </a>
-              <a href="admin.php?tab=crm&delete=<?= urlencode($lead['id'] ?? '') ?>"
-                 onclick="return confirm('Excluir este lead?')"
-                 class="text-red-400 hover:text-red-300 text-sm transition px-3 py-2.5">
-                Excluir
-              </a>
+              <form method="POST" onsubmit="return confirm('Excluir este lead?')">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                <button type="submit" name="delete" value="<?= htmlspecialchars($lead['id'] ?? '') ?>" class="text-red-400 hover:text-red-300 text-sm transition px-3 py-2.5">
+                  Excluir
+                </button>
+              </form>
             </div>
           </div>
         <?php endforeach; ?>

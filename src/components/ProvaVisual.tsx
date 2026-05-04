@@ -5,6 +5,9 @@ const ProvaVisual = () => (
       <h2 className="font-heading text-3xl sm:text-4xl font-bold text-center mb-6 text-white drop-shadow-lg">
         O painel mais visível da região
       </h2>
+      <p className="mx-auto mb-8 max-w-3xl text-center text-sm leading-relaxed text-muted-foreground sm:text-base">
+        Veja o painel em ação e perceba como a marca domina a atenção no ponto. A proposta aqui não é apenas aparecer, mas repetir o impacto ao longo do dia.
+      </p>
 
       {/* Vídeo vertical com recortes curvos nas laterais */}
       <div
@@ -20,6 +23,8 @@ const ProvaVisual = () => (
           loop
           muted
           playsInline
+          preload="metadata"
+          poster="/painel-einstein.png"
           className="w-full h-auto object-contain"
         />
         <div className="absolute inset-0 bg-black/30" aria-hidden />

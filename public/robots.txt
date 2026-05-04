@@ -12,3 +12,7 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /admin.php
+Disallow: /crm-data/
+
+Sitemap: https://geniovisual.cloud/sitemap.xml

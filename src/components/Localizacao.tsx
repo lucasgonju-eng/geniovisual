@@ -1,5 +1,4 @@
-import { MapPin, Navigation, Copy } from "lucide-react";
-import { toast } from "sonner";
+import { MapPin, Navigation } from "lucide-react";
 
 const stats = [
   { value: "1,7 mi", label: "impactos/mês" },
@@ -7,16 +6,9 @@ const stats = [
   { value: "15", label: "marcas no rodízio" },
 ];
 
-const pitchText = "Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta para o plano anual.";
-
 const Localizacao = () => {
-  const copyPitch = () => {
-    navigator.clipboard.writeText(pitchText);
-    toast.success("Mensagem copiada!");
-  };
-
   return (
-    <section id="localizacao" className="py-20 relative">
+    <section id="localizacao" className="scroll-mt-28 py-20 relative">
       <div className="container mx-auto px-4">
         <h2 className="font-heading text-3xl sm:text-4xl font-bold text-center mb-4">
           <span className="neon-gradient-text">Localização</span> Estratégica
@@ -38,8 +30,10 @@ const Localizacao = () => {
           <div className="glass-card neon-gradient-border rounded-xl p-8 flex flex-col justify-between">
             <div>
               <MapPin className="w-8 h-8 text-neon-cyan mb-4" />
-              <h3 className="font-heading text-xl font-semibold mb-2">Endereço do Painel</h3>
-              <p className="text-muted-foreground mb-6">Em frente ao Colégio Einstein, a 40 m do Goiânia Shopping. Fluxo intenso e visibilidade máxima todos os dias.</p>
+              <h3 className="font-heading text-xl font-semibold mb-2">Onde sua marca aparece</h3>
+              <p className="text-muted-foreground mb-6">
+                Em frente ao Colégio Einstein, a 40 m do Goiânia Shopping. Um ponto de alto fluxo para gerar repetição, lembrança e presença diária.
+              </p>
             </div>
             <a
               href="https://maps.app.goo.gl/ddU4i4T63wLnjseX8"

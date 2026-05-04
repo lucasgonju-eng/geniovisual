@@ -4,7 +4,6 @@ import { toast } from "sonner";
 
 const WHATSAPP_NUMBER = "+5562995077995";
 const pitchText = "Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta para o plano anual.";
-const PROPOSAL_EMAIL = "contato@geniovisual.cloud";
 const FORM_ENDPOINT = "/send.php";
 
 const planOptions = ["Bronze (Mensal)", "Prata (Trimestral)", "Ouro (Semestral)", "Diamante (Anual)", "Black (Bienal)"];
@@ -21,6 +20,22 @@ const Formulario = () => {
     consent: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const setFieldMessage = (event: React.InvalidEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const field = event.currentTarget;
+    const label = field.getAttribute("data-label") ?? "Este campo";
+
+    if (field.validity.valueMissing) {
+      field.setCustomValidity(`${label} é obrigatório.`);
+    } else if (field.validity.typeMismatch) {
+      field.setCustomValidity(`Informe um valor válido para ${label.toLowerCase()}.`);
+    } else {
+      field.setCustomValidity("Revise este campo.");
+    }
+  };
+
+  const clearFieldMessage = (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    event.currentTarget.setCustomValidity("");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,12 +77,17 @@ const Formulario = () => {
 
   if (submitted) {
     return (
-      <section id="proposta" className="py-20 relative">
+      <section id="proposta" className="scroll-mt-28 py-20 relative">
         <div className="container mx-auto px-4 max-w-2xl text-center">
           <div className="glass-card neon-gradient-border rounded-xl p-12">
             <CheckCircle className="w-16 h-16 text-neon-cyan mx-auto mb-6" />
             <h2 className="font-heading text-3xl font-bold mb-4">Proposta enviada!</h2>
-            <p className="text-muted-foreground mb-8">Entraremos em contato em breve. Ou se preferir, fale agora pelo WhatsApp:</p>
+            <p className="text-muted-foreground mb-3">
+              Entraremos em contato em breve com uma proposta personalizada.
+            </p>
+            <p className="text-sm text-muted-foreground mb-8">
+              Se quiser acelerar o atendimento, abra o WhatsApp agora mesmo.
+            </p>
             <a
               href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(pitchText)}`}
               target="_blank"
@@ -84,7 +104,7 @@ const Formulario = () => {
   }
 
   return (
-    <section id="proposta" className="py-20 relative particles-bg">
+    <section id="proposta" className="scroll-mt-28 py-20 relative particles-bg">
       <div className="container mx-auto px-4">
         <h2 className="font-heading text-3xl sm:text-4xl font-bold text-center mb-12">
           Receber <span className="neon-gradient-text">Proposta</span>
@@ -92,13 +112,21 @@ const Formulario = () => {
 
         <div className="grid gap-8 max-w-3xl mx-auto">
           {/* Form */}
-          <form onSubmit={handleSubmit} className="glass-card neon-gradient-border rounded-xl p-8 space-y-5">
+          <form onSubmit={handleSubmit} className="glass-card neon-gradient-border rounded-xl p-6 sm:p-8 space-y-5">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                Prefere comparar com calma? Envie seus dados e receba uma proposta comercial alinhada ao seu prazo e objetivo.
+              </p>
+            </div>
             <div>
               <label className="block text-sm font-medium mb-1.5">Nome *</label>
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onInvalid={setFieldMessage}
+                onInput={clearFieldMessage}
+                data-label="Nome"
                 className="w-full rounded-lg bg-muted border border-border px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="Seu nome"
                 required
@@ -110,6 +138,9 @@ const Formulario = () => {
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
+                onInvalid={setFieldMessage}
+                onInput={clearFieldMessage}
+                data-label="E-mail"
                 className="w-full rounded-lg bg-muted border border-border px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="seu@email.com"
                 required
@@ -121,6 +152,9 @@ const Formulario = () => {
                 type="tel"
                 value={form.whatsapp}
                 onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
+                onInvalid={setFieldMessage}
+                onInput={clearFieldMessage}
+                data-label="WhatsApp"
                 className="w-full rounded-lg bg-muted border border-border px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="(62) 99999-9999"
                 required
@@ -141,6 +175,9 @@ const Formulario = () => {
               <select
                 value={form.plano}
                 onChange={(e) => setForm({ ...form, plano: e.target.value })}
+                onInvalid={setFieldMessage}
+                onInput={clearFieldMessage}
+                data-label="Plano desejado"
                 className="w-full rounded-lg bg-muted border border-border px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="">Selecione um plano</option>
@@ -154,6 +191,9 @@ const Formulario = () => {
               <textarea
                 value={form.mensagem}
                 onChange={(e) => setForm({ ...form, mensagem: e.target.value })}
+                onInvalid={setFieldMessage}
+                onInput={clearFieldMessage}
+                data-label="Mensagem"
                 className="w-full rounded-lg bg-muted border border-border px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary h-24 resize-none"
                 placeholder="Sua mensagem (opcional)"
               />
@@ -164,18 +204,20 @@ const Formulario = () => {
                 checked={form.consent}
                 onChange={(e) => setForm({ ...form, consent: e.target.checked })}
                 className="mt-1 accent-neon-cyan"
-                required
               />
               <span className="text-xs text-muted-foreground">Autorizo o contato da Gênio Visual para envio de proposta comercial.</span>
             </label>
             <button
               type="submit"
-              className="btn-neon w-full flex items-center justify-center gap-2"
+              className="btn-neon w-full flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-70"
               disabled={isSubmitting}
             >
               <Send className="w-5 h-5" />
               {isSubmitting ? "Enviando..." : "Receber proposta agora"}
             </button>
+            <p className="text-center text-xs text-muted-foreground">
+              Se preferir resposta imediata, você também pode abrir o WhatsApp a qualquer momento.
+            </p>
           </form>
 
         </div>

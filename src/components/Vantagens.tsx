@@ -25,7 +25,7 @@ const Vantagens = () => (
         Por que anunciar com a <span className="neon-gradient-text">Gênio Visual</span>?
       </h2>
       <p className="text-muted-foreground text-center text-lg mb-12 max-w-xl mx-auto">
-        Diferenciais que fazem sua marca brilhar.
+        Diferenciais pensados para transformar visibilidade em lembrança e vendas.
       </p>
 
       <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
