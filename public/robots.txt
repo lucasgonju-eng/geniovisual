@@ -15,4 +15,4 @@ Allow: /
 Disallow: /admin.php
 Disallow: /crm-data/
 
-Sitemap: https://geniovisual.cloud/sitemap.xml
+Sitemap: https://geniovisual.com.br/sitemap.xml

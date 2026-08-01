@@ -4,8 +4,8 @@ declare(strict_types=1);
 function load_app_config(): array
 {
     $config = [
-        'app_url' => getenv('GENIO_APP_URL') ?: 'https://geniovisual.cloud',
-        'contact_email' => getenv('GENIO_CONTACT_EMAIL') ?: 'contato@geniovisual.cloud',
+        'app_url' => getenv('GENIO_APP_URL') ?: 'https://geniovisual.com.br',
+        'contact_email' => getenv('GENIO_CONTACT_EMAIL') ?: 'contato@geniovisual.com.br',
         'lead_recipient_email' => getenv('GENIO_LEAD_RECIPIENT_EMAIL') ?: '',
         'admin_user' => getenv('GENIO_ADMIN_USER') ?: '',
         'admin_password_hash' => getenv('GENIO_ADMIN_PASSWORD_HASH') ?: '',
