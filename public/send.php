@@ -1,5 +1,22 @@
 <?php
-require_once dirname(__DIR__) . '/private/bootstrap.php';
+$bootstrapPaths = [
+  dirname(__DIR__) . '/private/bootstrap.php',
+  __DIR__ . '/private/bootstrap.php',
+];
+
+$bootstrapLoaded = false;
+foreach ($bootstrapPaths as $bootstrapPath) {
+  if (is_file($bootstrapPath)) {
+    require_once $bootstrapPath;
+    $bootstrapLoaded = true;
+    break;
+  }
+}
+
+if (!$bootstrapLoaded) {
+  http_response_code(500);
+  exit('Bootstrap não encontrado.');
+}
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Robots-Tag: noindex, nofollow', true);
@@ -50,9 +67,9 @@ $lead = [
 append_json_record(__DIR__ . '/crm-data/leads.json', $lead, 5000);
 
 // --- Enviar e-mail interno (para a equipe) ---
-$to = app_config('lead_recipient_email', '') ?: app_config('contact_email', 'contato@geniovisual.cloud');
-$from = app_config('contact_email', 'contato@geniovisual.cloud');
-$appUrl = rtrim((string) app_config('app_url', 'https://geniovisual.cloud'), '/');
+$to = app_config('lead_recipient_email', '') ?: app_config('contact_email', 'contato@geniovisual.com.br');
+$from = app_config('contact_email', 'contato@geniovisual.com.br');
+$appUrl = rtrim((string) app_config('app_url', 'https://geniovisual.com.br'), '/');
 $whatsappGenio = '5562995077995';
 
 $bodyInterno = "=== Nova solicitação de proposta ===\n\n"
@@ -208,7 +225,7 @@ $htmlBody = <<<HTML
             Genio Visual &bull; Paineis de LED em Goiania/GO
           </p>
           <p style="margin:0;">
-            <a href="{$appUrl}" style="font-size:12px;color:#3b82f6;text-decoration:none;">geniovisual.cloud</a>
+            <a href="{$appUrl}" style="font-size:12px;color:#3b82f6;text-decoration:none;">geniovisual.com.br</a>
           </p>
         </td></tr>
 
@@ -218,7 +235,7 @@ $htmlBody = <<<HTML
       <table role="presentation" width="580" cellspacing="0" cellpadding="0" style="max-width:580px;width:100%;">
         <tr><td style="padding:24px 0 0;text-align:center;">
           <p style="margin:0;font-size:11px;color:#999;">
-            Voce recebeu este e-mail porque solicitou uma proposta em geniovisual.cloud
+            Voce recebeu este e-mail porque solicitou uma proposta em geniovisual.com.br
           </p>
         </td></tr>
       </table>

@@ -1,5 +1,22 @@
 <?php
-require_once dirname(__DIR__) . '/private/bootstrap.php';
+$bootstrapPaths = [
+  dirname(__DIR__) . '/private/bootstrap.php',
+  __DIR__ . '/private/bootstrap.php',
+];
+
+$bootstrapLoaded = false;
+foreach ($bootstrapPaths as $bootstrapPath) {
+  if (is_file($bootstrapPath)) {
+    require_once $bootstrapPath;
+    $bootstrapLoaded = true;
+    break;
+  }
+}
+
+if (!$bootstrapLoaded) {
+  http_response_code(500);
+  exit('Bootstrap não encontrado.');
+}
 
 session_set_cookie_params([
   'httponly' => true,
