@@ -1,7 +1,6 @@
 import { MessageCircle, Star } from "lucide-react";
 import logo from "@/assets/logo-optimized.png";
-
-const WHATSAPP_NUMBER = "+5562995077995";
+import { buildWhatsAppLink, trackWhatsAppClick } from "@/lib/whatsapp";
 
 const plans = [
   {
@@ -91,7 +90,11 @@ const Planos = () => (
             </ul>
 
             <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Olá! Tenho interesse no plano ${p.name} (${p.period}) do painel da Gênio Visual.`)}`}
+              href={buildWhatsAppLink(
+                `Olá! Tenho interesse no plano ${p.name} (${p.period}) do painel da Gênio Visual.`,
+                "planos",
+              )}
+              onClick={() => trackWhatsAppClick("planos", p.name)}
               target="_blank"
               rel="noopener noreferrer"
               className={`flex items-center justify-center gap-2 rounded-lg py-3 font-semibold text-sm transition-all duration-300 ${

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Menu, X, MessageCircle } from "lucide-react";
 import logo from "@/assets/logo-optimized.png";
+import { buildWhatsAppLink, trackWhatsAppClick } from "@/lib/whatsapp";
 
-const WHATSAPP_NUMBER = "+5562995077995";
-const WHATSAPP_MSG = encodeURIComponent("Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta.");
+const WHATSAPP_MSG = "Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta.";
 
 const navLinks = [
   { label: "Vantagens", href: "#vantagens" },
@@ -65,7 +65,8 @@ const Navbar = () => {
             </a>
           ))}
           <a
-            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MSG}`}
+            href={buildWhatsAppLink(WHATSAPP_MSG, "navbar")}
+            onClick={() => trackWhatsAppClick("navbar")}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-neon flex items-center gap-2 !px-6 !py-2.5 !text-sm"
@@ -99,7 +100,8 @@ const Navbar = () => {
             </a>
           ))}
           <a
-            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MSG}`}
+            href={buildWhatsAppLink(WHATSAPP_MSG, "navbar")}
+            onClick={() => trackWhatsAppClick("navbar")}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-neon mt-3 flex items-center justify-center gap-2 !px-4 !py-3 !text-sm"

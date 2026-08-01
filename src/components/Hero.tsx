@@ -1,9 +1,9 @@
 import { MessageCircle, ChevronDown } from "lucide-react";
 import heroPanel from "@/assets/hero-panel.jpg";
 import logo from "@/assets/logo-optimized.png";
+import { buildWhatsAppLink, trackWhatsAppClick } from "@/lib/whatsapp";
 
-const WHATSAPP_NUMBER = "+5562995077995";
-const WHATSAPP_MSG = encodeURIComponent("Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta.");
+const WHATSAPP_MSG = "Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta.";
 
 const stats = [
   { value: "1,7 mi", label: "impactos/mês" },
@@ -65,7 +65,8 @@ const Hero = () => (
 
         <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:justify-center">
           <a
-            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MSG}`}
+            href={buildWhatsAppLink(WHATSAPP_MSG, "hero")}
+            onClick={() => trackWhatsAppClick("hero")}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-neon flex items-center justify-center gap-2"
