@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { MessageCircle, Send, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { getAttribution } from "@/lib/attribution";
+import { buildWhatsAppLink, trackWhatsAppClick } from "@/lib/whatsapp";
 
-const WHATSAPP_NUMBER = "+5562995077995";
 const pitchText = "Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta para o plano anual.";
 const FORM_ENDPOINT = "/send.php";
+const CONSENT_TEXT = "Autorizo o contato da Gênio Visual para envio de proposta comercial.";
 
 const planOptions = ["Bronze (Mensal)", "Prata (Trimestral)", "Ouro (Semestral)", "Diamante (Anual)", "Black (Bienal)"];
 
@@ -45,6 +47,7 @@ const Formulario = () => {
     }
     setIsSubmitting(true);
     try {
+      const attribution = getAttribution();
       const response = await fetch(FORM_ENDPOINT, {
         method: "POST",
         headers: {
@@ -59,12 +62,26 @@ const Formulario = () => {
           plano: form.plano || "Não informado",
           mensagem: form.mensagem || "Não informado",
           subject: `Solicitação de proposta - ${form.name}`,
+          ...attribution,
+          page_url: window.location.href,
+          consent: true,
+          consent_text: CONSENT_TEXT,
+          consent_at: new Date().toISOString(),
         }),
       });
 
       if (!response.ok) {
         throw new Error("Erro ao enviar proposta");
       }
+
+      const trackedWindow = window as typeof window & { dataLayer?: Record<string, string>[] };
+      trackedWindow.dataLayer = trackedWindow.dataLayer || [];
+      trackedWindow.dataLayer.push({
+        event: "proposal_form_success",
+        plan_name: form.plano || "(nenhum)",
+        utm_source: attribution.utm_source || "(direto)",
+        utm_campaign: attribution.utm_campaign || "(nenhuma)",
+      });
 
       setSubmitted(true);
       toast.success("Proposta enviada com sucesso!");
@@ -89,7 +106,8 @@ const Formulario = () => {
               Se quiser acelerar o atendimento, abra o WhatsApp agora mesmo.
             </p>
             <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(pitchText)}`}
+              href={buildWhatsAppLink(pitchText, "formulario")}
+              onClick={() => trackWhatsAppClick("formulario", form.plano)}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-neon inline-flex items-center gap-2"
@@ -205,7 +223,7 @@ const Formulario = () => {
                 onChange={(e) => setForm({ ...form, consent: e.target.checked })}
                 className="mt-1 accent-neon-cyan"
               />
-              <span className="text-xs text-muted-foreground">Autorizo o contato da Gênio Visual para envio de proposta comercial.</span>
+              <span className="text-xs text-muted-foreground">{CONSENT_TEXT}</span>
             </label>
             <button
               type="submit"
