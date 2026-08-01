@@ -1,10 +1,36 @@
 <?php
-require_once dirname(__DIR__) . '/private/bootstrap.php';
+$bootstrapPaths = [
+  dirname(__DIR__) . '/private/bootstrap.php',
+  __DIR__ . '/private/bootstrap.php',
+];
+
+$bootstrapLoaded = false;
+foreach ($bootstrapPaths as $bootstrapPath) {
+  if (is_file($bootstrapPath)) {
+    require_once $bootstrapPath;
+    $bootstrapLoaded = true;
+    break;
+  }
+}
+
+if (!$bootstrapLoaded) {
+  http_response_code(500);
+  exit('Bootstrap não encontrado.');
+}
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: https://geniovisual.cloud');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('X-Robots-Tag: noindex, nofollow', true);
+
+$allowedOrigins = array_filter([
+  rtrim((string) app_config('app_url', 'https://geniovisual.com.br'), '/'),
+  'https://geniovisual.com.br',
+]);
+
+$origin = rtrim((string) ($_SERVER['HTTP_ORIGIN'] ?? ''), '/');
+if ($origin !== '' && in_array($origin, $allowedOrigins, true)) {
+  header("Access-Control-Allow-Origin: {$origin}");
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
   http_response_code(204);
