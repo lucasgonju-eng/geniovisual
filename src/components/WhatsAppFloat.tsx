@@ -1,12 +1,11 @@
 import { MessageCircle } from "lucide-react";
-import { buildWhatsAppLink, trackWhatsAppClick } from "@/lib/whatsapp";
 
-const WHATSAPP_MSG = "Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta.";
+const WHATSAPP_NUMBER = "+5562995077995";
+const WHATSAPP_MSG = encodeURIComponent("Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta.");
 
 const WhatsAppFloat = () => (
   <a
-    href={buildWhatsAppLink(WHATSAPP_MSG, "float")}
-    onClick={() => trackWhatsAppClick("float")}
+    href={`https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MSG}`}
     target="_blank"
     rel="noopener noreferrer"
     className="fixed bottom-4 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full shadow-lg animate-pulse-neon transition-transform hover:scale-110 sm:bottom-6 sm:right-6 sm:h-14 sm:w-14"

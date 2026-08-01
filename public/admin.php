@@ -252,15 +252,6 @@ function formatWhatsApp($number) {
   if (strlen($clean) <= 11) $clean = '55' . $clean;
   return $clean;
 }
-
-function formatLeadOrigin($lead) {
-  $parts = array_values(array_filter([
-    trim((string) ($lead['utm_source'] ?? '')),
-    trim((string) ($lead['utm_campaign'] ?? '')),
-  ], fn($value) => $value !== ''));
-
-  return $parts ? implode(' / ', $parts) : 'direto/sem origem';
-}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -529,7 +520,6 @@ function formatLeadOrigin($lead) {
               <th class="py-3 px-4">Empresa</th>
               <th class="py-3 px-4">Plano</th>
               <th class="py-3 px-4">Mensagem</th>
-              <th class="py-3 px-4">Origem</th>
               <th class="py-3 px-4">Data/Hora</th>
               <th class="py-3 px-4">IP</th>
               <th class="py-3 px-4">Ações</th>
@@ -561,9 +551,6 @@ function formatLeadOrigin($lead) {
                 </td>
                 <td class="py-4 px-4 text-sm text-zinc-400 max-w-[200px] truncate" title="<?= htmlspecialchars($lead['mensagem'] ?? '') ?>">
                   <?= htmlspecialchars($lead['mensagem'] ?? '') ?>
-                </td>
-                <td class="py-4 px-4 text-sm text-zinc-400 whitespace-nowrap">
-                  <?= htmlspecialchars(formatLeadOrigin($lead)) ?>
                 </td>
                 <td class="py-4 px-4 text-sm text-zinc-400 whitespace-nowrap"><?= htmlspecialchars($lead['data_hora'] ?? '') ?></td>
                 <td class="py-4 px-4 text-sm text-zinc-500"><?= htmlspecialchars($lead['ip'] ?? '') ?></td>
@@ -605,9 +592,6 @@ function formatLeadOrigin($lead) {
               </p>
               <p><span class="text-zinc-500">Mensagem:</span>
                 <span class="text-zinc-400 ml-1"><?= htmlspecialchars($lead['mensagem'] ?? '') ?></span>
-              </p>
-              <p><span class="text-zinc-500">Origem:</span>
-                <span class="text-zinc-400 ml-1"><?= htmlspecialchars(formatLeadOrigin($lead)) ?></span>
               </p>
               <p><span class="text-zinc-500">IP:</span>
                 <span class="text-zinc-500 ml-1"><?= htmlspecialchars($lead['ip'] ?? '') ?></span>

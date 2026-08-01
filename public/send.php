@@ -41,25 +41,6 @@ $mensagem = trim($data['mensagem'] ?? 'Nao informado');
 $subjectBase = trim($data['subject'] ?? 'Solicitacao de proposta');
 $subject = "{$subjectBase} (WhatsApp: {$whatsapp})";
 
-$sanitizeAttribution = static function ($value): string {
-  return substr(str_replace(["\r", "\n"], '', trim((string) $value)), 0, 255);
-};
-
-$utmSource = $sanitizeAttribution($data['utm_source'] ?? '');
-$utmMedium = $sanitizeAttribution($data['utm_medium'] ?? '');
-$utmCampaign = $sanitizeAttribution($data['utm_campaign'] ?? '');
-$utmContent = $sanitizeAttribution($data['utm_content'] ?? '');
-$utmTerm = $sanitizeAttribution($data['utm_term'] ?? '');
-$gclid = $sanitizeAttribution($data['gclid'] ?? '');
-$fbclid = $sanitizeAttribution($data['fbclid'] ?? '');
-$liFatId = $sanitizeAttribution($data['li_fat_id'] ?? '');
-$landingPath = $sanitizeAttribution($data['landing_path'] ?? '');
-$referrer = $sanitizeAttribution($data['referrer'] ?? '');
-$pageUrl = $sanitizeAttribution($data['page_url'] ?? '');
-$consent = ($data['consent'] ?? false) === true;
-$consentText = $sanitizeAttribution($data['consent_text'] ?? '');
-$consentAt = $sanitizeAttribution($data['consent_at'] ?? '');
-
 if ($name === '' || $email === '' || $whatsapp === '') {
   json_response(['ok' => false, 'error' => 'Preencha nome, e-mail e WhatsApp.'], 422);
 }
@@ -78,20 +59,6 @@ $lead = [
   'empresa'   => $empresa,
   'plano'     => $plano,
   'mensagem'  => $mensagem,
-  'utm_source' => $utmSource,
-  'utm_medium' => $utmMedium,
-  'utm_campaign' => $utmCampaign,
-  'utm_content' => $utmContent,
-  'utm_term' => $utmTerm,
-  'gclid' => $gclid,
-  'fbclid' => $fbclid,
-  'li_fat_id' => $liFatId,
-  'landing_path' => $landingPath,
-  'referrer' => $referrer,
-  'page_url' => $pageUrl,
-  'consent' => $consent,
-  'consent_text' => $consentText,
-  'consent_at' => $consentAt,
   'ip'        => $ip,
   'data_hora' => date('Y-m-d H:i:s'),
   'timezone'  => 'America/Sao_Paulo',
@@ -112,7 +79,6 @@ $bodyInterno = "=== Nova solicitação de proposta ===\n\n"
       . "Empresa: {$empresa}\n"
       . "Plano: {$plano}\n"
       . "Mensagem: {$mensagem}\n"
-      . "Origem: {$utmSource} / {$utmMedium} / {$utmCampaign}\n"
       . "IP: {$ip}\n"
       . "Data/Hora: {$lead['data_hora']}\n";
 
