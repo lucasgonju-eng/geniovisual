@@ -10,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 type Lead = {
   email: string;
   whatsapp: string;
+  segmento: string;
   email_status: string;
 };
 
@@ -44,6 +45,7 @@ const validPayload = (suffix = "1") => ({
   email: `lead${suffix}@example.com`,
   whatsapp: `62999990${suffix.padStart(3, "0")}`,
   empresa: "Empresa Teste",
+  segmento: "Imobiliário",
   plano: "Plano Teste",
   mensagem: "Mensagem de teste",
   consent: true,
@@ -109,6 +111,9 @@ describe("hardening do send.php", () => {
     const invalidWhatsapp = await postJson({ ...validPayload("1"), whatsapp: "123" });
     expect(invalidWhatsapp.status).toBe(422);
 
+    const missingSegment = await postJson({ ...validPayload("1"), segmento: "" });
+    expect(missingSegment.status).toBe(422);
+
     const oversized = await fetch(`${baseUrl}/send.php`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -138,6 +143,7 @@ describe("hardening do send.php", () => {
     expect(leadsAfterFirst[0]).toMatchObject({
       email: "lead1@example.com",
       whatsapp: "62999990001",
+      segmento: "Imobiliário",
       email_status: "failed",
     });
 
@@ -184,9 +190,11 @@ describe("hardening do send.php", () => {
     expect(source).toContain("$safeFirstName = $escapeHtml($firstName)");
     expect(source).toContain("$safePlano = $escapeHtml($plano)");
     expect(source).toContain("$safeEmpresa = $escapeHtml($empresa)");
+    expect(source).toContain("$safeSegmento = $escapeHtml($segmento)");
     expect(source).toContain("$safeEmail = $escapeHtml($email)");
     expect(source).not.toContain(">{$plano}<");
     expect(source).not.toContain(">{$empresa}<");
+    expect(source).not.toContain(">{$segmento}<");
     expect(source).not.toContain(">{$email}<");
     expect(source).not.toContain(">{$firstName}!");
   });

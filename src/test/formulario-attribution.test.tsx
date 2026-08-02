@@ -26,17 +26,25 @@ describe("envio atribuído do formulário", () => {
     fireEvent.change(screen.getByPlaceholderText("Seu nome"), { target: { value: "Lead Teste" } });
     fireEvent.change(screen.getByPlaceholderText("seu@email.com"), { target: { value: "lead@example.com" } });
     fireEvent.change(screen.getByPlaceholderText("(62) 99999-9999"), { target: { value: "(62) 99999-0000" } });
+    fireEvent.change(screen.getByPlaceholderText(/imobiliário, saúde, alimentação/i), {
+      target: { value: "Imobiliário" },
+    });
     fireEvent.click(screen.getByRole("checkbox"));
-    fireEvent.click(screen.getByRole("button", { name: /receber proposta agora/i }));
+    fireEvent.click(screen.getByRole("button", { name: /quero saber se meu segmento está livre/i }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
-    const request = fetchMock.mock.calls[0][1] as RequestInit;
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === "POST")).toBe(true);
+    });
+    const request = fetchMock.mock.calls.find(
+      ([, init]) => (init as RequestInit | undefined)?.method === "POST",
+    )?.[1] as RequestInit;
     const payload = JSON.parse(request.body as string);
 
     expect(payload).toMatchObject({
       utm_source: "linkedin",
       utm_medium: "cpc",
       utm_campaign: "teste",
+      segmento: "Imobiliário",
       consent: true,
       consent_text: "Autorizo o contato da Gênio Visual para envio de proposta comercial.",
     });

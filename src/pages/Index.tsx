@@ -3,6 +3,8 @@ import Hero from "@/components/Hero";
 import ProvaVisual from "@/components/ProvaVisual";
 import Vantagens from "@/components/Vantagens";
 import Credibilidade from "@/components/Credibilidade";
+import Frequencia from "@/components/Frequencia";
+import Exclusividade from "@/components/Exclusividade";
 import Planos from "@/components/Planos";
 import PainelFoto from "@/components/PainelFoto";
 import Localizacao from "@/components/Localizacao";
@@ -16,10 +18,12 @@ const Index = () => (
   <main className="min-h-screen">
     <Navbar />
     <Hero />
-    <ProvaVisual />
     <Vantagens />
     <Credibilidade />
+    <Frequencia />
+    <Exclusividade />
     <Planos />
+    <ProvaVisual />
     <PainelFoto />
     <Localizacao />
     <FAQ />

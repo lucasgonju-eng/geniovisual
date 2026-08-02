@@ -43,13 +43,13 @@ describe("atribuição de campanha", () => {
   });
 
   it("envia ao dataLayer apenas os dados permitidos do clique", () => {
-    trackWhatsAppClick("planos", "Diamante");
+    trackWhatsAppClick("planos", "Anual");
 
     expect((window as typeof window & { dataLayer?: unknown[] }).dataLayer).toEqual([
       {
         event: "whatsapp_click",
         cta_location: "planos",
-        plan_name: "Diamante",
+        plan_name: "Anual",
       },
     ]);
   });

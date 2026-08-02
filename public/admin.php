@@ -213,6 +213,7 @@ if ($search !== '') {
         || str_contains(mb_strtolower($l['email'] ?? ''), $searchLower)
         || str_contains(mb_strtolower($l['whatsapp'] ?? ''), $searchLower)
         || str_contains(mb_strtolower($l['empresa'] ?? ''), $searchLower)
+        || str_contains(mb_strtolower($l['segmento'] ?? ''), $searchLower)
         || str_contains(mb_strtolower($l['plano'] ?? ''), $searchLower);
   });
 }
@@ -743,7 +744,7 @@ function formatLeadOrigin($lead) {
       <div class="flex gap-3">
         <input type="text" name="q" value="<?= htmlspecialchars($search) ?>"
           class="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-          placeholder="Buscar por nome, e-mail, WhatsApp, empresa ou plano...">
+          placeholder="Buscar por nome, e-mail, WhatsApp, empresa, segmento ou plano...">
         <button type="submit"
           class="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-3 rounded-lg font-medium transition">
           Buscar
@@ -774,6 +775,7 @@ function formatLeadOrigin($lead) {
               <th class="py-3 px-4">E-mail</th>
               <th class="py-3 px-4">WhatsApp</th>
               <th class="py-3 px-4">Empresa</th>
+              <th class="py-3 px-4">Segmento</th>
               <th class="py-3 px-4">Plano</th>
               <th class="py-3 px-4">Mensagem</th>
               <th class="py-3 px-4">Origem</th>
@@ -801,6 +803,7 @@ function formatLeadOrigin($lead) {
                   </a>
                 </td>
                 <td class="py-4 px-4 text-sm text-zinc-300"><?= htmlspecialchars($lead['empresa'] ?? '') ?></td>
+                <td class="py-4 px-4 text-sm text-zinc-300"><?= htmlspecialchars($lead['segmento'] ?? '') ?></td>
                 <td class="py-4 px-4">
                   <span class="bg-blue-600/20 text-blue-400 px-2 py-1 rounded text-xs font-medium">
                     <?= htmlspecialchars($lead['plano'] ?? '') ?>
@@ -849,6 +852,9 @@ function formatLeadOrigin($lead) {
               </p>
               <p><span class="text-zinc-500">Empresa:</span>
                 <span class="text-zinc-300 ml-1"><?= htmlspecialchars($lead['empresa'] ?? '') ?></span>
+              </p>
+              <p><span class="text-zinc-500">Segmento:</span>
+                <span class="text-zinc-300 ml-1"><?= htmlspecialchars($lead['segmento'] ?? '') ?></span>
               </p>
               <p><span class="text-zinc-500">Mensagem:</span>
                 <span class="text-zinc-400 ml-1"><?= htmlspecialchars($lead['mensagem'] ?? '') ?></span>

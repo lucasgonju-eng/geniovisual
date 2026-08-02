@@ -3,10 +3,10 @@ const ProvaVisual = () => (
     <div className="container mx-auto px-4">
       {/* Título acima do vídeo */}
       <h2 className="font-heading text-3xl sm:text-4xl font-bold text-center mb-6 text-white drop-shadow-lg">
-        O painel mais visível da região
+        Veja o painel no ponto real
       </h2>
       <p className="mx-auto mb-8 max-w-3xl text-center text-sm leading-relaxed text-muted-foreground sm:text-base">
-        Veja o painel em ação e perceba como a marca domina a atenção no ponto. A proposta aqui não é apenas aparecer, mas repetir o impacto ao longo do dia.
+        Vídeo e fotos do painel, da via e do semáforo. Sem simulação.
       </p>
 
       {/* Vídeo vertical com recortes curvos nas laterais */}
@@ -30,7 +30,7 @@ const ProvaVisual = () => (
         <div className="absolute inset-0 bg-black/30" aria-hidden />
         <div className="absolute inset-0 flex items-end justify-center pb-6">
           <p className="text-white/90 text-center text-lg font-medium drop-shadow-md">
-            Impossível passar e não notar.
+            O painel, a via e o semáforo. Sem simulação.
           </p>
         </div>
       </div>
