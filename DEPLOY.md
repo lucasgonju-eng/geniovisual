@@ -4,12 +4,17 @@
 
 - Domínio: `https://geniovisual.com.br/`
 - Docroot real: `/home/u183246221/domains/geniovisual.com.br/public_html`
-- Método atual: publicação manual por SSH/SCP
+- Método principal: GitHub Actions por SSH/rsync
+- Método de contingência: publicação manual por SSH/SCP
 - Bundle em produção em 01/08/2026: `assets/index-oveIpfQa.js`
-- O workflow `deploy-hostinger.yml` está desarmado até a correção GV-018.
 
 As credenciais ficam exclusivamente em `D:\GenioVisual\.deploy-credentials`, fora
 do repositório. Nunca copie senhas, chaves ou `app-config.local.php` para o Git.
+
+O Actions usa uma chave SSH dedicada nos secrets `HOSTINGER_SSH_*`. O workflow
+roda em pushes para `main` e também pode ser iniciado manualmente. Antes do
+rsync, ele exige lint, testes, build e sintaxe PHP válidos. Depois do envio,
+compara checksums e confirma por HTTP que produção serve o bundle gerado.
 
 ## Pré-publicação
 
@@ -28,7 +33,19 @@ php -l public/admin.php
 
 Avise Lucas antes de alterar produção.
 
-## Publicação por SSH
+## Publicação automática
+
+O workflow `.github/workflows/deploy-hostinger.yml`:
+
+1. gera um bundle identificado pelo SHA do commit;
+2. valida a existência de `private/` e `crm-data/.htaccess` no destino;
+3. executa rsync sem `--delete`;
+4. exclui completamente `private/` e `crm-data/` do envio;
+5. compara os checksums local e remoto;
+6. compara o bundle do HTML público com o bundle gerado;
+7. falha se a proteção de `leads.json` não retornar `403` ou `404`.
+
+## Publicação manual de contingência
 
 1. Conecte por SSH usando host, porta e usuário do arquivo de credenciais local.
 2. Confirme com `pwd` e `ls` que o destino é o docroot `.com.br` acima.
@@ -55,8 +72,8 @@ Nunca apagar:
 
 - `crm-data/.htaccess`
 
-O build contém `crm-data/.htaccess` para manter a proteção, mas não contém os
-arquivos JSON vivos.
+O build contém `crm-data/.htaccess`, mas o pipeline exclui toda a pasta
+`crm-data/` para não tocar na proteção nem nos dados vivos.
 
 ## Prova de publicação
 

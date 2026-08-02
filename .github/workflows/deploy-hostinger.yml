@@ -1,12 +1,24 @@
-# ATENCAO: este workflow NAO publica no site.
-# Comprovado em 01/08/2026: producao servia assets/index-B8E9Velq.js, arquivo
-# identico ao do dist_20260504_170459.zip (upload manual de 04/05/2026).
-# Meses de runs "verdes" nunca atualizaram o docroot servido.
-# Publicacao atual = SSH manual. Ver DEPLOY.md. Correcao = GV-018 (Fase 2).
-name: Deploy to Hostinger (raiz)
+name: Deploy to Hostinger
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  DEPLOY_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+  DEPLOY_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
+  DEPLOY_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+  DEPLOY_PATH: ${{ secrets.HOSTINGER_SSH_DOCROOT }}
+  SITE_URL: https://geniovisual.com.br
 
 jobs:
   build-and-deploy:
@@ -21,21 +33,115 @@ jobs:
           node-version: "20"
           cache: "npm"
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
+
       - name: Build
+        env:
+          VITE_BUILD_SHA: ${{ github.sha }}
         run: npm run build
 
-      - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          port: 21
-          security: loose
-          timeout: 60000
-          local-dir: dist/
-          server-dir: /public_html/
+      - name: PHP syntax
+        run: |
+          php -l private/bootstrap.php
+          php -l public/send.php
+          php -l public/track.php
+          php -l public/admin.php
+
+      - name: Identify generated bundle
+        id: bundle
+        shell: bash
+        run: |
+          shopt -s nullglob
+          bundles=(dist/assets/index-*.js)
+          if [ "${#bundles[@]}" -ne 1 ]; then
+            echo "Expected exactly one generated JavaScript bundle, found ${#bundles[@]}." >&2
+            exit 1
+          fi
+          bundle_name="$(basename "${bundles[0]}")"
+          echo "name=$bundle_name" >> "$GITHUB_OUTPUT"
+          echo "Generated bundle: $bundle_name"
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.HOSTINGER_SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+
+      - name: Validate remote destination
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -p "$DEPLOY_PORT" \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "test -d '$DEPLOY_PATH' &&
+             test -d '$DEPLOY_PATH/private' &&
+             test -f '$DEPLOY_PATH/crm-data/.htaccess'"
+
+      - name: Deploy via rsync
+        run: |
+          rsync -az --checksum --itemize-changes \
+            --exclude='private/***' \
+            --exclude='crm-data/***' \
+            -e "ssh -i ~/.ssh/id_ed25519 -p $DEPLOY_PORT" \
+            dist/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+
+      - name: Verify remote checksums
+        env:
+          BUNDLE_NAME: ${{ steps.bundle.outputs.name }}
+        run: |
+          local_index_sha="$(sha256sum dist/index.html | awk '{print $1}')"
+          local_bundle_sha="$(sha256sum "dist/assets/$BUNDLE_NAME" | awk '{print $1}')"
+          remote_index_sha="$(ssh -i ~/.ssh/id_ed25519 -p "$DEPLOY_PORT" \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "sha256sum '$DEPLOY_PATH/index.html'" | awk '{print $1}')"
+          remote_bundle_sha="$(ssh -i ~/.ssh/id_ed25519 -p "$DEPLOY_PORT" \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "sha256sum '$DEPLOY_PATH/assets/$BUNDLE_NAME'" | awk '{print $1}')"
+
+          test "$local_index_sha" = "$remote_index_sha"
+          test "$local_bundle_sha" = "$remote_bundle_sha"
+
+      - name: Verify production bundle
+        env:
+          BUNDLE_NAME: ${{ steps.bundle.outputs.name }}
+        run: |
+          curl --fail --silent --show-error --retry 3 \
+            -H 'Cache-Control: no-cache' \
+            "$SITE_URL/?deploy=$GITHUB_SHA" > /tmp/site.html
+
+          public_bundle="$(python3 -c \
+            "import re,sys; m=re.search(r'/assets/(index-[^\" ]+\\.js)', sys.stdin.read()); print(m.group(1) if m else '')" \
+            < /tmp/site.html)"
+
+          if [ "$public_bundle" != "$BUNDLE_NAME" ]; then
+            echo "Published bundle mismatch: expected $BUNDLE_NAME, got ${public_bundle:-none}." >&2
+            exit 1
+          fi
+
+          curl --fail --silent --show-error \
+            "$SITE_URL/assets/$BUNDLE_NAME?deploy=$GITHUB_SHA" \
+            -o /dev/null
+
+          crm_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            "$SITE_URL/crm-data/leads.json")"
+          if [ "$crm_status" != "403" ] && [ "$crm_status" != "404" ]; then
+            echo "CRM protection failed with HTTP $crm_status." >&2
+            exit 1
+          fi
+
+          echo "Production is serving $public_bundle; CRM returned $crm_status."
