@@ -20,7 +20,7 @@ describe("Index", () => {
     )).toHaveLength(3);
     expect(screen.queryByRole("heading", { name: /bronze|black/i })).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /quero saber se meu segmento está livre/i }),
+      screen.getByRole("button", { name: /quero receber uma proposta/i }),
     ).toBeInTheDocument();
   });
 });

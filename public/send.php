@@ -18,6 +18,8 @@ if (!$bootstrapLoaded) {
   exit('Bootstrap não encontrado.');
 }
 
+require_once __DIR__ . '/lib/painel.php';
+
 header('Content-Type: application/json; charset=utf-8');
 header('X-Robots-Tag: noindex, nofollow', true);
 date_default_timezone_set('America/Sao_Paulo');
@@ -75,6 +77,7 @@ $whatsappRaw = $readField($data, 'whatsapp', 255);
 $whatsapp = preg_replace('/\D+/', '', $whatsappRaw) ?? '';
 $empresa = $readField($data, 'empresa', 120, 'Não informado');
 $segmento = $readField($data, 'segmento', 120);
+$segmentoSlug = painel_slugify($readField($data, 'segmento_slug', 80, $segmento));
 $plano = $readField($data, 'plano', 60, 'Não informado');
 $mensagem = $readField($data, 'mensagem', 2000, 'Não informado', false);
 $subjectBase = $readField($data, 'subject', 255, 'Solicitação de proposta');
@@ -105,6 +108,30 @@ if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
 if (strlen($whatsapp) < 10 || strlen($whatsapp) > 13) {
   json_response(['ok' => false, 'error' => 'Informe um WhatsApp válido.'], 422);
 }
+
+$panelConfig = painel_read_config();
+$registeredSegment = painel_find_segment($panelConfig, $segmentoSlug);
+$registeredPlan = painel_find_plan($panelConfig, $plano);
+$planHasExclusivity = $registeredPlan !== null
+  ? (bool) $registeredPlan['exclusividade']
+  : mb_strtolower(trim($plano), 'UTF-8') !== 'mensal';
+$listaEspera = !empty($registeredSegment['ocupado'])
+  && $planHasExclusivity;
+if ($registeredSegment !== null) {
+  $segmento = (string) $registeredSegment['nome'];
+  $segmentoSlug = (string) $registeredSegment['slug'];
+}
+if ($registeredPlan !== null) {
+  $plano = (string) $registeredPlan['nome'];
+}
+$precoVigente = $registeredPlan !== null ? (int) $registeredPlan['preco_efetivo'] : null;
+$precoCheio = $registeredPlan !== null ? (int) $registeredPlan['preco'] : null;
+$emCampanha = $registeredPlan !== null && (bool) $registeredPlan['em_campanha'];
+$campanhaRotulo = $emCampanha ? (string) ($registeredPlan['rotulo'] ?? '') : '';
+$campanhaValidade = $emCampanha ? (string) ($registeredPlan['validade'] ?? '') : '';
+$precoVigenteLabel = $precoVigente !== null
+  ? 'R$ ' . number_format($precoVigente, 0, ',', '.') . '/mês'
+  : 'Sob consulta';
 
 $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'desconhecido';
 if (strpos($ip, ',') !== false) {
@@ -233,7 +260,8 @@ if (!$rateLimitAllowed) {
   json_response(['ok' => false, 'error' => 'Limite de envios excedido. Tente novamente mais tarde.'], 429);
 }
 
-$subject = "{$subjectBase} (WhatsApp: {$whatsapp})";
+$waitlistSubject = $listaEspera ? '[LISTA DE ESPERA] ' : '';
+$subject = "{$waitlistSubject}{$subjectBase} (WhatsApp: {$whatsapp})";
 $leadId = uniqid('lead_');
 $lead = [
   'id'        => $leadId,
@@ -242,7 +270,14 @@ $lead = [
   'whatsapp'  => $whatsapp,
   'empresa'   => $empresa,
   'segmento'  => $segmento,
+  'segmento_slug' => $segmentoSlug,
+  'lista_espera' => $listaEspera,
   'plano'     => $plano,
+  'preco_vigente' => $precoVigente,
+  'preco_cheio' => $precoCheio,
+  'em_campanha' => $emCampanha,
+  'campanha_rotulo' => $campanhaRotulo,
+  'campanha_validade' => $campanhaValidade,
   'mensagem'  => $mensagem,
   'utm_source' => $utmSource,
   'utm_medium' => $utmMedium,
@@ -283,7 +318,10 @@ $bodyInterno = "=== Nova solicitação de proposta ===\n\n"
       . "WhatsApp: {$whatsapp}\n"
       . "Empresa: {$empresa}\n"
       . "Segmento: {$segmento}\n"
+      . "Lista de espera: " . ($listaEspera ? 'SIM' : 'NÃO') . "\n"
       . "Plano: {$plano}\n"
+      . "Preço vigente: {$precoVigenteLabel}\n"
+      . ($emCampanha ? "Campanha: {$campanhaRotulo} (até {$campanhaValidade})\n" : '')
       . "Mensagem: {$mensagem}\n"
       . "Origem: {$utmSource} / {$utmMedium} / {$utmCampaign}\n"
       . "IP: {$ip}\n"
@@ -312,6 +350,7 @@ $escapeHtml = static fn(string $value): string => htmlspecialchars(
 );
 $safeFirstName = $escapeHtml($firstName);
 $safePlano = $escapeHtml($plano);
+$safePrecoVigente = $escapeHtml($precoVigenteLabel);
 $safeEmpresa = $escapeHtml($empresa);
 $safeSegmento = $escapeHtml($segmento);
 $safeEmail = $escapeHtml($email);
@@ -397,6 +436,10 @@ $htmlBody = <<<HTML
                 <tr>
                   <td style="padding:10px 0;border-bottom:1px solid #1c1c1c;color:#666;font-size:13px;width:90px;">Plano</td>
                   <td style="padding:10px 0;border-bottom:1px solid #1c1c1c;color:#fff;font-size:14px;font-weight:600;">{$safePlano}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;border-bottom:1px solid #1c1c1c;color:#666;font-size:13px;">Preço</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #1c1c1c;color:#fff;font-size:14px;font-weight:600;">{$safePrecoVigente}</td>
                 </tr>
                 <tr>
                   <td style="padding:10px 0;border-bottom:1px solid #1c1c1c;color:#666;font-size:13px;">Empresa</td>

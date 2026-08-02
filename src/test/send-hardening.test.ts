@@ -2,7 +2,7 @@
 
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createServer } from "node:net";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -11,6 +11,10 @@ type Lead = {
   email: string;
   whatsapp: string;
   segmento: string;
+  segmento_slug: string;
+  lista_espera: boolean;
+  preco_vigente: number | null;
+  em_campanha: boolean;
   email_status: string;
 };
 
@@ -45,8 +49,9 @@ const validPayload = (suffix = "1") => ({
   email: `lead${suffix}@example.com`,
   whatsapp: `62999990${suffix.padStart(3, "0")}`,
   empresa: "Empresa Teste",
-  segmento: "Imobiliário",
-  plano: "Plano Teste",
+  segmento: "Tecnologia",
+  segmento_slug: "tecnologia",
+  plano: "Anual",
   mensagem: "Mensagem de teste",
   consent: true,
 });
@@ -62,12 +67,39 @@ const readLeads = async (): Promise<Lead[]> => {
 beforeAll(async () => {
   const port = await getFreePort();
   dataDir = await mkdtemp(path.join(tmpdir(), "gv-send-hardening-"));
+  const panelConfigPath = path.join(dataDir, "painel-config.json");
+  await writeFile(
+    panelConfigPath,
+    JSON.stringify({
+      anunciantes_regulares: 3,
+      anunciantes_com_exclusividade: 2,
+      einstein_intercalado: true,
+      duracao_segundos: 10,
+      horas_por_dia: 18,
+      vagas_totais: 12,
+      segmentos: [
+        { slug: "automotivo", nome: "Automotivo", ocupado: true },
+        { slug: "imobiliario", nome: "Imobiliário", ocupado: false },
+        { slug: "tecnologia", nome: "Tecnologia", ocupado: false },
+      ],
+      planos: [
+        { slug: "mensal", nome: "Mensal", meses: 1, preco: 4_500, exclusividade: false },
+        { slug: "trimestral", nome: "Trimestral", meses: 3, preco: 3_600, exclusividade: true },
+        { slug: "semestral", nome: "Semestral", meses: 6, preco: 3_150, exclusividade: true },
+        { slug: "anual", nome: "Anual", meses: 12, preco: 2_700, exclusividade: true, destaque: true },
+      ],
+      preco_minimo: 2_500,
+      atualizado_em: "2026-08-02",
+    }),
+    "utf8",
+  );
   baseUrl = `http://127.0.0.1:${port}`;
   phpServer = spawn("php", ["-S", `127.0.0.1:${port}`, "-t", "public"], {
     cwd: process.cwd(),
     env: {
       ...process.env,
       GENIO_CRM_DATA_DIR: dataDir,
+      GENIO_PAINEL_CONFIG_PATH: panelConfigPath,
       GENIO_DISABLE_MAIL: "1",
     },
   });
@@ -143,7 +175,9 @@ describe("hardening do send.php", () => {
     expect(leadsAfterFirst[0]).toMatchObject({
       email: "lead1@example.com",
       whatsapp: "62999990001",
-      segmento: "Imobiliário",
+      segmento: "Tecnologia",
+      segmento_slug: "tecnologia",
+      lista_espera: false,
       email_status: "failed",
     });
 
@@ -152,8 +186,46 @@ describe("hardening do send.php", () => {
     expect(await readLeads()).toHaveLength(1);
   });
 
+  it("grava como lista de espera quando o segmento está ocupado", async () => {
+    const response = await postJson({
+      ...validPayload("7"),
+      segmento: "Automotivo",
+      segmento_slug: "automotivo",
+      lista_espera: false,
+    });
+    expect(response.status).toBe(200);
+
+    const lead = (await readLeads()).find((item) => item.email === "lead7@example.com");
+    expect(lead).toMatchObject({
+      segmento: "Automotivo",
+      segmento_slug: "automotivo",
+      lista_espera: true,
+      preco_vigente: 2_700,
+    });
+  });
+
+  it("não coloca o plano mensal na espera quando o segmento está ocupado", async () => {
+    const response = await postJson({
+      ...validPayload("8"),
+      segmento: "Automotivo",
+      segmento_slug: "automotivo",
+      plano: "Mensal",
+      lista_espera: true,
+    });
+    expect(response.status).toBe(200);
+
+    const lead = (await readLeads()).find((item) => item.email === "lead8@example.com");
+    expect(lead).toMatchObject({
+      segmento: "Automotivo",
+      segmento_slug: "automotivo",
+      plano: "Mensal",
+      lista_espera: false,
+      preco_vigente: 4_500,
+    });
+  });
+
   it("bloqueia o sexto envio por IP dentro de uma hora", async () => {
-    for (const suffix of ["2", "3", "4", "5"]) {
+    for (const suffix of ["2", "3"]) {
       const response = await postJson(validPayload(suffix));
       expect(response.status).toBe(200);
     }
@@ -189,6 +261,7 @@ describe("hardening do send.php", () => {
     const source = await readFile(path.join(process.cwd(), "public", "send.php"), "utf8");
     expect(source).toContain("$safeFirstName = $escapeHtml($firstName)");
     expect(source).toContain("$safePlano = $escapeHtml($plano)");
+    expect(source).toContain("$safePrecoVigente = $escapeHtml($precoVigenteLabel)");
     expect(source).toContain("$safeEmpresa = $escapeHtml($empresa)");
     expect(source).toContain("$safeSegmento = $escapeHtml($segmento)");
     expect(source).toContain("$safeEmail = $escapeHtml($email)");
