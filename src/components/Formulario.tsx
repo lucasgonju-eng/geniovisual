@@ -1,22 +1,24 @@
 import { useState } from "react";
 import { MessageCircle, Send, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { usePainelStatus } from "@/hooks/usePainelStatus";
 import { getAttribution } from "@/lib/attribution";
+import { PLAN_OPTIONS } from "@/lib/plans";
 import { buildWhatsAppLink, trackWhatsAppClick } from "@/lib/whatsapp";
 
-const pitchText = "Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta para o plano anual.";
+const pitchText = "Olá! Quero saber se o meu segmento está livre para anunciar no painel da Gênio Visual.";
 const FORM_ENDPOINT = "/send.php";
 const CONSENT_TEXT = "Autorizo o contato da Gênio Visual para envio de proposta comercial.";
 
-const planOptions = ["Bronze (Mensal)", "Prata (Trimestral)", "Ouro (Semestral)", "Diamante (Anual)", "Black (Bienal)"];
-
 const Formulario = () => {
+  const { status: painel, isLive } = usePainelStatus();
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
     whatsapp: "",
     empresa: "",
+    segmento: "",
     plano: "",
     mensagem: "",
     website: "",
@@ -42,7 +44,7 @@ const Formulario = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.whatsapp || !form.consent) {
+    if (!form.name || !form.email || !form.whatsapp || !form.segmento || !form.consent) {
       toast.error("Preencha os campos obrigatórios.");
       return;
     }
@@ -60,6 +62,7 @@ const Formulario = () => {
           email: form.email,
           whatsapp: form.whatsapp,
           empresa: form.empresa || "Não informado",
+          segmento: form.segmento,
           plano: form.plano || "Não informado",
           mensagem: form.mensagem || "Não informado",
           subject: `Solicitação de proposta - ${form.name}`,
@@ -127,7 +130,7 @@ const Formulario = () => {
     <section id="proposta" className="scroll-mt-28 py-20 relative particles-bg">
       <div className="container mx-auto px-4">
         <h2 className="font-heading text-3xl sm:text-4xl font-bold text-center mb-12">
-          Receber <span className="neon-gradient-text">Proposta</span>
+          Veja se o seu <span className="neon-gradient-text">segmento ainda está livre</span>.
         </h2>
 
         <div className="grid gap-8 max-w-3xl mx-auto">
@@ -148,7 +151,8 @@ const Formulario = () => {
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
-                Prefere comparar com calma? Envie seus dados e receba uma proposta comercial alinhada ao seu prazo e objetivo.
+                {isLive ? `São ${painel.vagas_restantes} vagas e um anunciante por segmento. ` : "Trabalhamos com um anunciante por segmento. "}
+                Me diga o seu ramo e eu retorno com a disponibilidade e o valor.
               </p>
             </div>
             <div>
@@ -208,8 +212,25 @@ const Formulario = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1.5">Plano desejado</label>
+              <label htmlFor="segmento" className="block text-sm font-medium mb-1.5">Segmento *</label>
+              <input
+                id="segmento"
+                type="text"
+                value={form.segmento}
+                onChange={(e) => setForm({ ...form, segmento: e.target.value })}
+                onInvalid={setFieldMessage}
+                onInput={clearFieldMessage}
+                data-label="Segmento"
+                className="w-full rounded-lg bg-muted border border-border px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Ex.: imobiliário, saúde, alimentação"
+                maxLength={120}
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="plano" className="block text-sm font-medium mb-1.5">Plano desejado</label>
               <select
+                id="plano"
                 value={form.plano}
                 onChange={(e) => setForm({ ...form, plano: e.target.value })}
                 onInvalid={setFieldMessage}
@@ -218,7 +239,7 @@ const Formulario = () => {
                 className="w-full rounded-lg bg-muted border border-border px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="">Selecione um plano</option>
-                {planOptions.map((p) => (
+                {PLAN_OPTIONS.map((p) => (
                   <option key={p} value={p}>{p}</option>
                 ))}
               </select>
@@ -251,11 +272,18 @@ const Formulario = () => {
               disabled={isSubmitting}
             >
               <Send className="w-5 h-5" />
-              {isSubmitting ? "Enviando..." : "Receber proposta agora"}
+              {isSubmitting ? "Enviando..." : "Quero saber se meu segmento está livre"}
             </button>
-            <p className="text-center text-xs text-muted-foreground">
-              Se preferir resposta imediata, você também pode abrir o WhatsApp a qualquer momento.
-            </p>
+            <a
+              href={buildWhatsAppLink(pitchText, "formulario_alternativa")}
+              onClick={() => trackWhatsAppClick("formulario_alternativa", form.plano)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 text-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Prefiro falar no WhatsApp
+            </a>
           </form>
 
         </div>

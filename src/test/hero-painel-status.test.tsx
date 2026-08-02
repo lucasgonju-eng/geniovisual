@@ -14,11 +14,13 @@ describe("status operacional no Hero", () => {
     render(<Hero />);
 
     expect(
-      screen.getByText("No mínimo 15 aparições por hora — 45 minutos de tela por dia."),
+      screen.getByText("15 aparições por hora, garantidas em contrato"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("45 minutos de tela por dia — o mínimo, mesmo com o painel lotado."),
     ).toBeInTheDocument();
     expect(screen.queryByText("Vantagem de entrar agora")).not.toBeInTheDocument();
-    expect(screen.queryByText("anunciantes hoje")).not.toBeInTheDocument();
-    expect(screen.queryByText("vagas restantes")).not.toBeInTheDocument();
+    expect(screen.queryByText(/restam \d+ vagas/i)).not.toBeInTheDocument();
   });
 
   it("separa garantia da vantagem atual retornada pelo endpoint", async () => {
@@ -50,13 +52,13 @@ describe("status operacional no Hero", () => {
     await waitFor(() => {
       expect(
         screen.getByText(
-          "Hoje, com apenas 3 anunciantes, sua marca recebe 60 por hora e 3 horas de tela por dia — 4× o garantido.",
+          "Hoje, com apenas 3 anunciantes, sua marca receberia 60 por hora e 180 minutos de tela por dia.",
         ),
       ).toBeInTheDocument();
     });
     expect(
-      screen.getByText("No mínimo 15 aparições por hora — 45 minutos de tela por dia."),
+      screen.getByText("15 aparições por hora, garantidas em contrato"),
     ).toBeInTheDocument();
-    expect(screen.getByText("9", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("Restam 9 vagas.")).toBeInTheDocument();
   });
 });

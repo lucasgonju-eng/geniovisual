@@ -43,32 +43,45 @@ const isPainelStatus = (value: unknown): value is PainelStatus => {
   });
 };
 
+let inFlightRequest: Promise<PainelStatus | null> | null = null;
+
+const requestPainelStatus = () => {
+  if (inFlightRequest) return inFlightRequest;
+
+  inFlightRequest = fetch("/painel-status.php", {
+    headers: { Accept: "application/json" },
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error("Painel status indisponível");
+      return response.json();
+    })
+    .then((payload) => (isPainelStatus(payload) ? payload : null))
+    .catch(() => null)
+    .finally(() => {
+      inFlightRequest = null;
+    });
+
+  return inFlightRequest;
+};
+
 export const usePainelStatus = () => {
   const [status, setStatus] = useState<PainelStatus>(PAINEL_STATUS_FALLBACK);
   const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let active = true;
 
-    fetch("/painel-status.php", {
-      headers: { Accept: "application/json" },
-      signal: controller.signal,
-    })
-      .then((response) => {
-        if (!response.ok) throw new Error("Painel status indisponível");
-        return response.json();
-      })
+    requestPainelStatus()
       .then((payload) => {
-        if (isPainelStatus(payload)) {
+        if (active && payload) {
           setStatus(payload);
           setIsLive(true);
         }
-      })
-      .catch(() => {
-        // O fallback conservador já está renderizado.
       });
 
-    return () => controller.abort();
+    return () => {
+      active = false;
+    };
   }, []);
 
   return { status, isLive };

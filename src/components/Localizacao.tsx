@@ -1,38 +1,23 @@
 import { MapPin, Navigation } from "lucide-react";
 
-const stats = [
-  { value: "1,7 mi", label: "impactos/mês" },
-  { value: "19h", label: "de operação/dia" },
-  { value: "15", label: "marcas no rodízio" },
-];
-
 const Localizacao = () => {
   return (
     <section id="localizacao" className="scroll-mt-28 py-20 relative">
       <div className="container mx-auto px-4">
         <h2 className="font-heading text-3xl sm:text-4xl font-bold text-center mb-4">
-          <span className="neon-gradient-text">Localização</span> Estratégica
+          <span className="neon-gradient-text">Av. T-15</span>, Setor Bueno.
         </h2>
         <p className="text-muted-foreground text-center text-lg mb-12 max-w-2xl mx-auto">
-          Em frente ao Colégio Einstein, a 40 m do Goiânia Shopping. Fluxo intenso e visibilidade máxima todos os dias.
+          Em frente ao Colégio Einstein e a menos de 50 metros do Goiânia Shopping, num ponto onde o trânsito para no sinal. É a diferença entre ser visto de relance a 60 km/h e ser lido com calma.
         </p>
 
-        <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-12">
-          {stats.map((s) => (
-            <div key={s.label} className="text-center">
-              <div className="font-heading text-2xl sm:text-3xl font-bold neon-gradient-text">{s.value}</div>
-              <div className="text-muted-foreground text-xs sm:text-sm">{s.label}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <div className="mx-auto max-w-2xl">
           <div className="glass-card neon-gradient-border rounded-xl p-8 flex flex-col justify-between">
             <div>
-              <MapPin className="w-8 h-8 text-neon-cyan mb-4" />
-              <h3 className="font-heading text-xl font-semibold mb-2">Onde sua marca aparece</h3>
+              <MapPin className="w-8 h-8 text-neon-cyan mb-4 mx-auto" />
+              <h3 className="font-heading text-xl font-semibold mb-2 text-center">Onde sua marca aparece</h3>
               <p className="text-muted-foreground mb-6">
-                Em frente ao Colégio Einstein, a 40 m do Goiânia Shopping. Um ponto de alto fluxo para gerar repetição, lembrança e presença diária.
+                O mapa abaixo abre a rota para o ponto do painel na Av. T-15, em frente ao Colégio Einstein.
               </p>
             </div>
             <a

@@ -74,6 +74,7 @@ $email = $readField($data, 'email', 255);
 $whatsappRaw = $readField($data, 'whatsapp', 255);
 $whatsapp = preg_replace('/\D+/', '', $whatsappRaw) ?? '';
 $empresa = $readField($data, 'empresa', 120, 'Não informado');
+$segmento = $readField($data, 'segmento', 120);
 $plano = $readField($data, 'plano', 60, 'Não informado');
 $mensagem = $readField($data, 'mensagem', 2000, 'Não informado', false);
 $subjectBase = $readField($data, 'subject', 255, 'Solicitação de proposta');
@@ -93,8 +94,8 @@ $consent = ($data['consent'] ?? false) === true;
 $consentText = $readField($data, 'consent_text', 255);
 $consentAt = $readField($data, 'consent_at', 255);
 
-if ($name === '' || $email === '' || $whatsapp === '') {
-  json_response(['ok' => false, 'error' => 'Preencha nome, e-mail e WhatsApp.'], 422);
+if ($name === '' || $email === '' || $whatsapp === '' || $segmento === '') {
+  json_response(['ok' => false, 'error' => 'Preencha nome, e-mail, WhatsApp e segmento.'], 422);
 }
 
 if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
@@ -240,6 +241,7 @@ $lead = [
   'email'     => $email,
   'whatsapp'  => $whatsapp,
   'empresa'   => $empresa,
+  'segmento'  => $segmento,
   'plano'     => $plano,
   'mensagem'  => $mensagem,
   'utm_source' => $utmSource,
@@ -280,6 +282,7 @@ $bodyInterno = "=== Nova solicitação de proposta ===\n\n"
       . "E-mail: {$email}\n"
       . "WhatsApp: {$whatsapp}\n"
       . "Empresa: {$empresa}\n"
+      . "Segmento: {$segmento}\n"
       . "Plano: {$plano}\n"
       . "Mensagem: {$mensagem}\n"
       . "Origem: {$utmSource} / {$utmMedium} / {$utmCampaign}\n"
@@ -310,6 +313,7 @@ $escapeHtml = static fn(string $value): string => htmlspecialchars(
 $safeFirstName = $escapeHtml($firstName);
 $safePlano = $escapeHtml($plano);
 $safeEmpresa = $escapeHtml($empresa);
+$safeSegmento = $escapeHtml($segmento);
 $safeEmail = $escapeHtml($email);
 $safeWaLink = $escapeHtml($waLink);
 $safeLogoUrl = $escapeHtml($logoUrl);
@@ -364,18 +368,18 @@ $htmlBody = <<<HTML
                   Olá, {$safeFirstName}!
                 </p>
                 <p style="margin:6px 0 0;font-size:14px;color:#888;">
-                  Que bom ter voce por aqui.
+                  Que bom ter você por aqui.
                 </p>
               </td>
             </tr>
           </table>
 
           <p style="margin:0 0 14px;font-size:15px;line-height:1.8;color:#b0b0b0;">
-            Recebemos sua solicitação de proposta e estamos muito felizes com o seu interesse em anunciar no maior painel de LED de Goiânia.
+            Recebemos sua solicitação de proposta para anunciar no painel de LED da Gênio Visual, em Goiânia.
           </p>
 
           <p style="margin:0 0 32px;font-size:15px;line-height:1.8;color:#b0b0b0;">
-            Nossa equipe ja esta preparando a melhor proposta para voce. Em breve entraremos em contato com todos os detalhes.
+            Nossa equipe já está preparando a proposta para você. Em breve entraremos em contato com os detalhes.
           </p>
 
         </td></tr>
@@ -397,6 +401,10 @@ $htmlBody = <<<HTML
                 <tr>
                   <td style="padding:10px 0;border-bottom:1px solid #1c1c1c;color:#666;font-size:13px;">Empresa</td>
                   <td style="padding:10px 0;border-bottom:1px solid #1c1c1c;color:#fff;font-size:14px;">{$safeEmpresa}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;border-bottom:1px solid #1c1c1c;color:#666;font-size:13px;">Segmento</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #1c1c1c;color:#fff;font-size:14px;">{$safeSegmento}</td>
                 </tr>
                 <tr>
                   <td style="padding:10px 0;color:#666;font-size:13px;">E-mail</td>
