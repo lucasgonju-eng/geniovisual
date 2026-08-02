@@ -78,6 +78,17 @@ describe("copy operacional da landing", () => {
     expect(screen.getAllByText(/frequência garantida: 15 aparições\/hora/i)).toHaveLength(4);
     expect(screen.getByText("Sem exclusividade de segmento")).toBeVisible();
     expect(screen.getByText("Mais vendido")).toBeInTheDocument();
+    expect(screen.getByText("R$ 4.500")).toBeInTheDocument();
+    expect(screen.getByText("R$ 2.700")).toBeInTheDocument();
+    expect(screen.getByText("20% abaixo do mensal")).toBeInTheDocument();
+    expect(screen.getByText("30% abaixo do mensal")).toBeInTheDocument();
+    expect(screen.getByText("40% abaixo do mensal")).toBeInTheDocument();
+    expect(document.querySelector(".line-through")).toBeNull();
+    expect(
+      decodeURIComponent(
+        screen.getAllByRole("link", { name: /falar sobre este plano/i })[0].getAttribute("href") ?? "",
+      ),
+    ).toContain("R$ 4.500");
     expect(screen.queryByText(/prioridade.*rodízio/i)).not.toBeInTheDocument();
 
     const planSelect = screen.getByRole("combobox", { name: /plano desejado/i });
@@ -93,6 +104,11 @@ describe("copy operacional da landing", () => {
     fireEvent.change(planSelect, { target: { value: "Mensal" } });
     expect(screen.getByText(/no plano mensal isso não impede sua entrada/i)).toBeInTheDocument();
     expect(screen.queryByText(/este segmento já está ocupado/i)).not.toBeInTheDocument();
+    expect(
+      decodeURIComponent(
+        screen.getByRole("link", { name: /prefiro falar no whatsapp/i }).getAttribute("href") ?? "",
+      ),
+    ).toContain("plano Mensal por R$ 4.500 por mês");
 
   });
 
@@ -132,6 +148,41 @@ describe("copy operacional da landing", () => {
     expect(screen.getByText("Pet")).toBeInTheDocument();
     expect(screen.queryByText("Livre")).not.toBeInTheDocument();
     expect(screen.queryByText("Ocupado")).not.toBeInTheDocument();
+  });
+
+  it("volta a sob consulta sem endpoint e só risca preço em campanha vigente", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+    const { unmount } = render(<Planos />);
+
+    expect(screen.getAllByText("Valor mensal sob consulta")).toHaveLength(4);
+    expect(document.body.textContent).not.toMatch(/R\$\s*\d/);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    unmount();
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          ...painelStatus,
+          planos: painelStatus.planos.map((plan) => plan.slug === "trimestral"
+            ? {
+              ...plan,
+              preco_efetivo: 2_700,
+              em_campanha: true,
+              rotulo: "Trimestral pelo preço do anual",
+              validade: "2026-08-31",
+            }
+            : plan),
+        }),
+      }),
+    );
+    render(<Planos />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Trimestral pelo preço do anual · válido até 31/08/2026")).toBeInTheDocument();
+    });
+    expect(document.querySelectorAll(".line-through")).toHaveLength(1);
   });
 
 });
