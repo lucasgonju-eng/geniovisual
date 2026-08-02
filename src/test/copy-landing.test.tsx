@@ -69,18 +69,19 @@ describe("copy operacional da landing", () => {
       expect.objectContaining({ cache: "no-store" }),
     );
 
-    const planNames = ["Trimestral", "Semestral", "Anual"];
+    const planNames = ["Mensal", "Trimestral", "Semestral", "Anual"];
     const planHeadings = screen.getAllByRole("heading", { level: 3 }).filter((heading) =>
       planNames.includes(heading.textContent ?? ""),
     );
-    expect(planHeadings).toHaveLength(3);
+    expect(planHeadings).toHaveLength(4);
     expect(planHeadings.map((heading) => heading.textContent)).toEqual(planNames);
-    expect(screen.getAllByText(/frequência garantida: 15 aparições\/hora/i)).toHaveLength(3);
+    expect(screen.getAllByText(/frequência garantida: 15 aparições\/hora/i)).toHaveLength(4);
+    expect(screen.getByText("Sem exclusividade de segmento")).toBeVisible();
     expect(screen.getByText("Mais vendido")).toBeInTheDocument();
     expect(screen.queryByText(/prioridade.*rodízio/i)).not.toBeInTheDocument();
 
     const planSelect = screen.getByRole("combobox", { name: /plano desejado/i });
-    expect(planSelect.querySelectorAll("option")).toHaveLength(4);
+    expect(planSelect.querySelectorAll("option")).toHaveLength(5);
     const segmentSelect = screen.getByRole("combobox", { name: /segmento/i });
     expect(segmentSelect.querySelectorAll("option")).toHaveLength(14);
     expect(screen.getByText(/10 segmentos ainda livres/i)).toBeInTheDocument();
@@ -88,6 +89,10 @@ describe("copy operacional da landing", () => {
     fireEvent.click(screen.getByRole("link", { name: /automotivo ocupado/i }));
     expect(segmentSelect).toHaveValue("automotivo");
     expect(screen.getByText(/este segmento já está ocupado/i)).toBeInTheDocument();
+
+    fireEvent.change(planSelect, { target: { value: "Mensal" } });
+    expect(screen.getByText(/no plano mensal isso não impede sua entrada/i)).toBeInTheDocument();
+    expect(screen.queryByText(/este segmento já está ocupado/i)).not.toBeInTheDocument();
 
   });
 
