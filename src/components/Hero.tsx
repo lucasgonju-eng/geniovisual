@@ -2,6 +2,7 @@ import { MessageCircle, ChevronDown } from "lucide-react";
 import heroPanel from "@/assets/hero-panel.jpg";
 import logo from "@/assets/logo-optimized.png";
 import { usePainelStatus } from "@/hooks/usePainelStatus";
+import { formatPrice } from "@/lib/pricing";
 import { buildWhatsAppLink, trackWhatsAppClick } from "@/lib/whatsapp";
 
 const WHATSAPP_MSG = "Olá! Quero anunciar no painel da Gênio Visual. Gostaria de consultar os valores e a disponibilidade do meu segmento.";
@@ -41,6 +42,15 @@ const Hero = () => {
 
         <p className="mx-auto mb-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg md:text-xl">
           Nosso painel de LED fica em frente ao semáforo da T-15, a menos de 50 metros do Goiânia Shopping. Quem passa por ali não passa voando: para, espera o sinal abrir e tem tempo de ler o seu anúncio.
+        </p>
+
+        <p className="mt-7 font-heading text-2xl font-bold text-foreground sm:text-3xl">
+          {isLive && painel.preco_a_partir_de !== null
+            ? `A partir de ${formatPrice(painel.preco_a_partir_de)} por mês.`
+            : "Valor mensal sob consulta."}
+        </p>
+        <p className="mt-2 text-sm font-medium text-muted-foreground sm:text-base">
+          Direto com o proprietário, sem agência e sem comissão.
         </p>
 
         <div className="mb-4 mt-10 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:justify-center">

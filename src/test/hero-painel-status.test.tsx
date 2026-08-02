@@ -21,6 +21,10 @@ describe("status operacional no Hero", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText("Vantagem de entrar agora")).not.toBeInTheDocument();
     expect(screen.queryByText(/restam \d+ vagas/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Valor mensal sob consulta.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Direto com o proprietário, sem agência e sem comissão."),
+    ).toBeInTheDocument();
   });
 
   it("separa garantia da vantagem atual retornada pelo endpoint", async () => {
@@ -76,5 +80,6 @@ describe("status operacional no Hero", () => {
       screen.getByText("15 aparições por hora, garantidas em contrato"),
     ).toBeInTheDocument();
     expect(screen.getByText("Restam 9 vagas.")).toBeInTheDocument();
+    expect(screen.getByText("A partir de R$ 2.700 por mês.")).toBeInTheDocument();
   });
 });
