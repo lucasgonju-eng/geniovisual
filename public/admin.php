@@ -18,6 +18,8 @@ if (!$bootstrapLoaded) {
   exit('Bootstrap não encontrado.');
 }
 
+require_once __DIR__ . '/lib/painel.php';
+
 session_set_cookie_params([
   'httponly' => true,
   'samesite' => 'Strict',
@@ -35,6 +37,8 @@ $adminUser = (string) app_config('admin_user', '');
 $adminPassHash = (string) app_config('admin_password_hash', '');
 $adminConfigured = admin_is_configured();
 $loginError = '';
+$painelErrors = [];
+$painelForm = null;
 
 $isValidCsrf = static function (): bool {
   return hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '');
@@ -85,6 +89,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete']) && !empty($
   }
   header('Location: admin.php?tab=crm');
   exit;
+}
+
+// --- Ação: atualizar configuração operacional do painel ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_painel']) && !empty($_SESSION['admin_logged'])) {
+  if (!$isValidCsrf()) {
+    http_response_code(403);
+    exit('Sessão expirada. Recarregue a página e tente novamente.');
+  }
+
+  $painelForm = [
+    'anunciantes_regulares' => trim((string) ($_POST['anunciantes_regulares'] ?? '')),
+    'einstein_intercalado' => isset($_POST['einstein_intercalado']),
+    'duracao_segundos' => trim((string) ($_POST['duracao_segundos'] ?? '')),
+    'horas_por_dia' => trim((string) ($_POST['horas_por_dia'] ?? '')),
+    'vagas_totais' => trim((string) ($_POST['vagas_totais'] ?? '')),
+  ];
+
+  $anunciantes = filter_var(
+    $painelForm['anunciantes_regulares'],
+    FILTER_VALIDATE_INT,
+    ['options' => ['min_range' => 0]]
+  );
+  $duracao = filter_var(
+    $painelForm['duracao_segundos'],
+    FILTER_VALIDATE_INT,
+    ['options' => ['min_range' => 5, 'max_range' => 60]]
+  );
+  $horas = filter_var(
+    $painelForm['horas_por_dia'],
+    FILTER_VALIDATE_INT,
+    ['options' => ['min_range' => 1, 'max_range' => 24]]
+  );
+  $vagas = filter_var(
+    $painelForm['vagas_totais'],
+    FILTER_VALIDATE_INT,
+    ['options' => ['min_range' => 0]]
+  );
+
+  if ($anunciantes === false) {
+    $painelErrors[] = 'Anunciantes regulares deve ser um inteiro maior ou igual a zero.';
+  }
+  if ($duracao === false) {
+    $painelErrors[] = 'A duração deve ser um inteiro entre 5 e 60 segundos.';
+  }
+  if ($horas === false) {
+    $painelErrors[] = 'As horas por dia devem ser um inteiro entre 1 e 24.';
+  }
+  if ($vagas === false) {
+    $painelErrors[] = 'Vagas totais deve ser um inteiro maior ou igual a zero.';
+  }
+  if ($anunciantes !== false && $vagas !== false && $vagas < $anunciantes) {
+    $painelErrors[] = 'Vagas totais não pode ser menor que anunciantes regulares.';
+  }
+
+  if ($painelErrors === []) {
+    try {
+      painel_write_config([
+        'anunciantes_regulares' => $anunciantes,
+        'einstein_intercalado' => $painelForm['einstein_intercalado'],
+        'duracao_segundos' => $duracao,
+        'horas_por_dia' => $horas,
+        'vagas_totais' => $vagas,
+        'atualizado_em' => date('Y-m-d'),
+      ]);
+      $_SESSION['painel_flash'] = 'Configuração do painel atualizada.';
+      header('Location: admin.php?tab=painel');
+      exit;
+    } catch (Throwable $error) {
+      $painelErrors[] = 'Não foi possível salvar a configuração privada.';
+    }
+  }
 }
 
 // --- Se não logado, exibir tela de login ---
@@ -139,6 +214,15 @@ if (empty($_SESSION['admin_logged'])):
 <?php
 // --- Dashboard (logado) ---
 $tab = $_GET['tab'] ?? 'crm';
+if (!in_array($tab, ['crm', 'analytics', 'painel'], true)) {
+  $tab = 'crm';
+}
+
+$painelConfig = painel_read_config();
+$painelStatus = painel_calculate_status($painelConfig);
+$painelInput = $painelForm ?? $painelConfig;
+$painelFlash = (string) ($_SESSION['painel_flash'] ?? '');
+unset($_SESSION['painel_flash']);
 
 // CRM data
 $crmFile = __DIR__ . '/crm-data/leads.json';
@@ -267,7 +351,7 @@ function formatLeadOrigin($lead) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= $tab === 'analytics' ? 'Analytics' : 'CRM' ?> • Gênio Visual</title>
+  <title><?= htmlspecialchars(['crm' => 'CRM', 'analytics' => 'Analytics', 'painel' => 'Painel'][$tab]) ?> • Gênio Visual</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>body{background:#0a0a0a;}</style>
 </head>
@@ -300,6 +384,10 @@ function formatLeadOrigin($lead) {
       <a href="admin.php?tab=analytics"
          class="px-5 py-3 text-sm font-medium transition border-b-2 <?= $tab === 'analytics' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300' ?>">
         Analytics
+      </a>
+      <a href="admin.php?tab=painel"
+         class="px-5 py-3 text-sm font-medium transition border-b-2 <?= $tab === 'painel' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300' ?>">
+        Painel
       </a>
     </div>
   </header>
@@ -486,6 +574,164 @@ function formatLeadOrigin($lead) {
         <p class="text-green-400 text-xs mt-3">✓ GTM e GA4 configurados. Os dados aparecem em Relatórios → Tempo real no GA4.</p>
       </div>
     </div>
+
+  <?php elseif ($tab === 'painel'): ?>
+    <!-- ===================== ABA PAINEL ===================== -->
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <section class="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+        <h2 class="text-xl font-semibold mb-2">Configuração operacional</h2>
+        <p class="text-zinc-500 text-sm mb-6">
+          Use sempre o menor número de horas operadas em um dia da semana.
+        </p>
+
+        <?php if ($painelFlash !== ''): ?>
+          <p class="mb-5 rounded-lg border border-green-700 bg-green-950/40 px-4 py-3 text-sm text-green-300">
+            <?= htmlspecialchars($painelFlash) ?>
+          </p>
+        <?php endif; ?>
+
+        <?php if ($painelErrors !== []): ?>
+          <div class="mb-5 rounded-lg border border-red-800 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+            <ul class="list-disc space-y-1 pl-5">
+              <?php foreach ($painelErrors as $error): ?>
+                <li><?= htmlspecialchars($error) ?></li>
+              <?php endforeach; ?>
+            </ul>
+          </div>
+        <?php endif; ?>
+
+        <form method="POST" action="admin.php?tab=painel" class="space-y-5" id="painel-form">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+          <input type="hidden" name="save_painel" value="1">
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="block">
+              <span class="block text-sm text-zinc-400 mb-1.5">Anunciantes regulares</span>
+              <input type="number" name="anunciantes_regulares" min="0" step="1" required
+                value="<?= htmlspecialchars((string) $painelInput['anunciantes_regulares']) ?>"
+                class="painel-input w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+            </label>
+
+            <label class="block">
+              <span class="block text-sm text-zinc-400 mb-1.5">Vagas totais</span>
+              <input type="number" name="vagas_totais" min="0" step="1" required
+                value="<?= htmlspecialchars((string) $painelInput['vagas_totais']) ?>"
+                class="painel-input w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+            </label>
+
+            <label class="block">
+              <span class="block text-sm text-zinc-400 mb-1.5">Duração de cada inserção (s)</span>
+              <input type="number" name="duracao_segundos" min="5" max="60" step="1" required
+                value="<?= htmlspecialchars((string) $painelInput['duracao_segundos']) ?>"
+                class="painel-input w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+            </label>
+
+            <label class="block">
+              <span class="block text-sm text-zinc-400 mb-1.5">Horas por dia</span>
+              <input type="number" name="horas_por_dia" min="1" max="24" step="1" required
+                value="<?= htmlspecialchars((string) $painelInput['horas_por_dia']) ?>"
+                class="painel-input w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+            </label>
+          </div>
+
+          <label class="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950/50 px-4 py-3">
+            <input type="checkbox" name="einstein_intercalado" value="1"
+              <?= !empty($painelInput['einstein_intercalado']) ? 'checked' : '' ?>
+              class="painel-input h-4 w-4 accent-cyan-500">
+            <span class="text-sm text-zinc-300">Colégio Einstein intercalado entre anunciantes</span>
+          </label>
+
+          <p class="text-xs text-zinc-600">
+            Última atualização: <?= htmlspecialchars((string) $painelConfig['atualizado_em']) ?>
+          </p>
+
+          <button type="submit"
+            class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold py-3 rounded-lg hover:opacity-90 transition">
+            Salvar configuração
+          </button>
+        </form>
+      </section>
+
+      <section class="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+        <h2 class="text-xl font-semibold mb-2">Pré-visualização pública</h2>
+        <p class="text-zinc-500 text-sm mb-6">Estes valores são recalculados antes de salvar.</p>
+
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div class="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
+            <p class="text-3xl font-bold text-cyan-400" id="preview-anunciantes"><?= $painelStatus['anunciantes'] ?></p>
+            <p class="text-xs text-zinc-500">anunciantes hoje</p>
+          </div>
+          <div class="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
+            <p class="text-3xl font-bold text-cyan-400" id="preview-vagas"><?= $painelStatus['vagas_restantes'] ?></p>
+            <p class="text-xs text-zinc-500">vagas restantes</p>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
+            <p class="font-semibold text-white">
+              No mínimo <span id="preview-hora"><?= $painelStatus['aparicoes_hora'] ?></span> aparições por hora.
+            </p>
+            <p class="mt-1 text-sm text-zinc-500">
+              Hoje, com <span id="preview-anunciantes-frase"><?= $painelStatus['anunciantes'] ?></span> anunciantes,
+              sua marca ficaria <span id="preview-tempo"><?= $painelStatus['tela_dia_minutos'] ?> minutos</span> por dia na tela.
+            </p>
+          </div>
+          <div class="rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
+            <div class="grid grid-cols-2 gap-3">
+              <p><strong class="block text-white" id="preview-dia"><?= $painelStatus['aparicoes_dia'] ?></strong> aparições/dia</p>
+              <p><strong class="block text-white" id="preview-mes"><?= $painelStatus['aparicoes_mes'] ?></strong> aparições/mês</p>
+              <p><strong class="block text-white" id="preview-ciclo"><?= $painelStatus['ciclo_segundos'] ?>s</strong> ciclo completo</p>
+              <p><strong class="block text-white" id="preview-duracao"><?= $painelStatus['duracao_segundos'] ?>s</strong> por inserção</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      (() => {
+        const form = document.getElementById('painel-form');
+        if (!form) return;
+        const field = (name) => form.elements.namedItem(name);
+        const setText = (id, value) => {
+          const element = document.getElementById(id);
+          if (element) element.textContent = String(value);
+        };
+        const durationLabel = (minutes) => {
+          if (minutes === 60) return '1 hora';
+          if (minutes > 60 && minutes % 60 === 0) return `${minutes / 60} horas`;
+          return `${minutes} minutos`;
+        };
+        const refresh = () => {
+          const advertisers = Math.max(0, Number(field('anunciantes_regulares').value) || 0);
+          const totalVacancies = Math.max(0, Number(field('vagas_totais').value) || 0);
+          const duration = Math.max(0, Number(field('duracao_segundos').value) || 0);
+          const hours = Math.max(0, Number(field('horas_por_dia').value) || 0);
+          const interleaved = field('einstein_intercalado').checked;
+          const slots = interleaved ? advertisers * 2 : advertisers;
+          const cycle = slots * duration;
+          const perHour = cycle > 0 ? 3600 / cycle : 0;
+          const perDay = perHour * hours;
+          const minutes = Math.round((perDay * duration) / 60);
+
+          setText('preview-anunciantes', advertisers);
+          setText('preview-anunciantes-frase', advertisers);
+          setText('preview-vagas', Math.max(0, totalVacancies - advertisers));
+          setText('preview-hora', Math.round(perHour));
+          setText('preview-dia', Math.round(perDay));
+          setText('preview-mes', Math.round(perDay * 30));
+          setText('preview-tempo', durationLabel(minutes));
+          setText('preview-ciclo', `${Math.round(cycle)}s`);
+          setText('preview-duracao', `${Math.round(duration)}s`);
+        };
+        form.querySelectorAll('.painel-input').forEach((input) => {
+          input.addEventListener('input', refresh);
+          input.addEventListener('change', refresh);
+        });
+        refresh();
+      })();
+    </script>
 
   <?php else: ?>
     <!-- ===================== ABA CRM ===================== -->

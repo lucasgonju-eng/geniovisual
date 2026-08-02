@@ -59,6 +59,8 @@ jobs:
           php -l public/send.php
           php -l public/track.php
           php -l public/admin.php
+          php -l public/lib/painel.php
+          php -l public/painel-status.php
 
       - name: Identify generated bundle
         id: bundle

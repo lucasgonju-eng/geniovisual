@@ -1,16 +1,10 @@
 import { MessageCircle, ChevronDown } from "lucide-react";
 import heroPanel from "@/assets/hero-panel.jpg";
 import logo from "@/assets/logo-optimized.png";
+import { usePainelStatus } from "@/hooks/usePainelStatus";
 import { buildWhatsAppLink, trackWhatsAppClick } from "@/lib/whatsapp";
 
 const WHATSAPP_MSG = "Olá! Quero anunciar no painel da Gênio Visual. Me envie os horários disponíveis e a melhor proposta.";
-
-const stats = [
-  { value: "1,7 mi", label: "impactos/mês" },
-  { value: "115 mil", label: "impactos/mês por anunciante" },
-  { value: "13 mil", label: "exibições/mês por anunciante" },
-  { value: "Mais de 400", label: "aparições por dia" },
-];
 
 const tags = [
   "Rodízio premium com apenas 15 marcas",
@@ -18,8 +12,20 @@ const tags = [
   "Operação de até 19h por dia",
 ];
 
-const Hero = () => (
-  <section className="relative flex min-h-screen items-center overflow-hidden pt-24 md:pt-28">
+const formatNumber = (value: number) => new Intl.NumberFormat("pt-BR").format(value);
+
+const formatScreenTime = (minutes: number) => {
+  if (minutes === 60) return "1 hora";
+  if (minutes > 60 && minutes % 60 === 0) return `${minutes / 60} horas`;
+  return `${minutes} minutos`;
+};
+
+const Hero = () => {
+  const painel = usePainelStatus();
+  const screenTime = formatScreenTime(painel.tela_dia_minutos);
+
+  return (
+    <section className="relative flex min-h-screen items-center overflow-hidden pt-24 md:pt-28">
     {/* Background image */}
     <div className="absolute inset-0 z-0">
       <img src={heroPanel} alt="" className="h-full w-full object-cover opacity-30" />
@@ -87,18 +93,41 @@ const Hero = () => (
           O WhatsApp abre em nova aba para acelerar o atendimento.
         </p>
 
-        {/* Stats */}
-        <div className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
-          {stats.map((s) => (
-            <div key={s.label} className="glass-card neon-gradient-border rounded-xl p-5 text-center sm:p-6">
-              <div className="mb-1 font-heading text-3xl font-bold neon-gradient-text sm:text-4xl">{s.value}</div>
-              <div className="text-xs text-muted-foreground sm:text-sm">{s.label}</div>
+        {/* Status operacional do painel */}
+        <div className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:gap-4">
+          <div className="glass-card neon-gradient-border rounded-xl p-5 text-center sm:p-6">
+            <div className="mb-1 font-heading text-3xl font-bold neon-gradient-text sm:text-4xl">
+              {painel.anunciantes}
             </div>
-          ))}
+            <div className="text-xs text-muted-foreground sm:text-sm">anunciantes hoje</div>
+          </div>
+          <div className="glass-card neon-gradient-border rounded-xl p-5 text-center sm:p-6">
+            <div className="mb-1 font-heading text-3xl font-bold neon-gradient-text sm:text-4xl">
+              {painel.vagas_restantes}
+            </div>
+            <div className="text-xs text-muted-foreground sm:text-sm">vagas restantes</div>
+          </div>
+          <div className="glass-card neon-gradient-border rounded-xl p-5 text-center sm:col-span-2 sm:p-6">
+            <p className="font-heading text-xl font-semibold text-foreground sm:text-2xl">
+              Sua marca: {formatNumber(painel.aparicoes_dia)} aparições por dia — {screenTime} de tela, todo dia.
+            </p>
+            <p className="mt-3 text-sm text-muted-foreground sm:text-base">
+              No mínimo {painel.aparicoes_hora} aparições por hora.
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground sm:text-base">
+              Hoje, com {painel.anunciantes} anunciantes, sua marca ficaria {screenTime} por dia na tela.
+            </p>
+          </div>
+          <div className="glass-card rounded-xl border border-border/60 p-5 text-center sm:col-span-2 sm:p-6">
+            <p className="text-sm font-medium text-foreground sm:text-base">
+              Em frente ao semáforo: vista por quem está parado.
+            </p>
+          </div>
         </div>
       </div>
     </div>
   </section>
-);
+  );
+};
 
 export default Hero;
