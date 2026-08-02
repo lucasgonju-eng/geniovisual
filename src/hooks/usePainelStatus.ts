@@ -10,18 +10,28 @@ export type PainelStatus = {
   tela_dia_minutos: number;
   ciclo_segundos: number;
   duracao_segundos: number;
+  aparicoes_hora_min: number;
+  aparicoes_dia_min: number;
+  aparicoes_mes_min: number;
+  tela_dia_min_minutos: number;
+  ciclo_max_segundos: number;
 };
 
 export const PAINEL_STATUS_FALLBACK: PainelStatus = {
-  anunciantes: 9,
-  vagas_totais: 15,
-  vagas_restantes: 6,
-  aparicoes_hora: 20,
-  aparicoes_dia: 360,
-  aparicoes_mes: 10_800,
-  tela_dia_minutos: 60,
-  ciclo_segundos: 180,
+  anunciantes: 3,
+  vagas_totais: 12,
+  vagas_restantes: 9,
+  aparicoes_hora: 60,
+  aparicoes_dia: 1_080,
+  aparicoes_mes: 32_400,
+  tela_dia_minutos: 180,
+  ciclo_segundos: 60,
   duracao_segundos: 10,
+  aparicoes_hora_min: 15,
+  aparicoes_dia_min: 270,
+  aparicoes_mes_min: 8_100,
+  tela_dia_min_minutos: 45,
+  ciclo_max_segundos: 240,
 };
 
 const isPainelStatus = (value: unknown): value is PainelStatus => {
@@ -35,6 +45,7 @@ const isPainelStatus = (value: unknown): value is PainelStatus => {
 
 export const usePainelStatus = () => {
   const [status, setStatus] = useState<PainelStatus>(PAINEL_STATUS_FALLBACK);
+  const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -48,7 +59,10 @@ export const usePainelStatus = () => {
         return response.json();
       })
       .then((payload) => {
-        if (isPainelStatus(payload)) setStatus(payload);
+        if (isPainelStatus(payload)) {
+          setStatus(payload);
+          setIsLive(true);
+        }
       })
       .catch(() => {
         // O fallback conservador já está renderizado.
@@ -57,5 +71,5 @@ export const usePainelStatus = () => {
     return () => controller.abort();
   }, []);
 
-  return status;
+  return { status, isLive };
 };

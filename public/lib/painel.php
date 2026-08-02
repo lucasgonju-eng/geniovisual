@@ -4,11 +4,11 @@ declare(strict_types=1);
 function painel_default_config(): array
 {
     return [
-        'anunciantes_regulares' => 9,
+        'anunciantes_regulares' => 3,
         'einstein_intercalado' => true,
         'duracao_segundos' => 10,
         'horas_por_dia' => 18,
-        'vagas_totais' => 15,
+        'vagas_totais' => 12,
         'atualizado_em' => '2026-08-02',
     ];
 }
@@ -71,6 +71,73 @@ function painel_normalize_config(array $candidate): array
     return $config;
 }
 
+function painel_validate_admin_config(array $candidate): array
+{
+    $errors = [];
+    $anunciantes = filter_var(
+        $candidate['anunciantes_regulares'] ?? null,
+        FILTER_VALIDATE_INT,
+        ['options' => ['min_range' => 0]]
+    );
+    $duracao = filter_var(
+        $candidate['duracao_segundos'] ?? null,
+        FILTER_VALIDATE_INT,
+        ['options' => ['min_range' => 5, 'max_range' => 60]]
+    );
+    $horas = filter_var(
+        $candidate['horas_por_dia'] ?? null,
+        FILTER_VALIDATE_INT,
+        ['options' => ['min_range' => 1, 'max_range' => 24]]
+    );
+    $vagas = filter_var(
+        $candidate['vagas_totais'] ?? null,
+        FILTER_VALIDATE_INT,
+        ['options' => ['min_range' => 0]]
+    );
+
+    if ($anunciantes === false) {
+        $errors[] = 'Anunciantes regulares deve ser um inteiro maior ou igual a zero.';
+    }
+    if ($duracao === false) {
+        $errors[] = 'A duração deve ser um inteiro entre 5 e 60 segundos.';
+    }
+    if ($horas === false) {
+        $errors[] = 'As horas por dia devem ser um inteiro entre 1 e 24.';
+    }
+    if ($vagas === false) {
+        $errors[] = 'Vagas totais deve ser um inteiro maior ou igual a zero.';
+    }
+    if ($anunciantes !== false && $vagas !== false && $anunciantes > $vagas) {
+        $errors[] = 'Não é permitido salvar: anunciantes regulares não pode ser maior que vagas totais.';
+    }
+
+    return [
+        'errors' => $errors,
+        'config' => $errors === [] ? [
+            'anunciantes_regulares' => $anunciantes,
+            'einstein_intercalado' => ($candidate['einstein_intercalado'] ?? false) === true,
+            'duracao_segundos' => $duracao,
+            'horas_por_dia' => $horas,
+            'vagas_totais' => $vagas,
+            'atualizado_em' => (string) ($candidate['atualizado_em'] ?? date('Y-m-d')),
+        ] : null,
+    ];
+}
+
+function painel_ceiling_increase_warning(array $current, array $proposed): ?string
+{
+    $current = painel_normalize_config($current);
+    $proposed = painel_normalize_config($proposed);
+    if ($proposed['vagas_totais'] <= $current['vagas_totais']) {
+        return null;
+    }
+
+    $currentFloor = painel_calculate_status($current)['aparicoes_hora_min'];
+    $proposedFloor = painel_calculate_status($proposed)['aparicoes_hora_min'];
+
+    return "Aumentar o teto reduz a frequência garantida de todos os contratos vigentes. Piso atual: {$currentFloor}/hora. Piso após a mudança: {$proposedFloor}/hora.";
+}
+
 function painel_read_config(): array
 {
     $path = painel_config_path();
@@ -100,6 +167,12 @@ function painel_calculate_status(array $config): array
     $ciclo = $slots * $duracao;
     $aparicoesHora = $ciclo > 0 ? 3600 / $ciclo : 0;
     $aparicoesDia = $aparicoesHora * $normalized['horas_por_dia'];
+    $slotsMax = $normalized['einstein_intercalado']
+        ? $normalized['vagas_totais'] * 2
+        : $normalized['vagas_totais'];
+    $cicloMax = $slotsMax * $duracao;
+    $aparicoesHoraMin = $cicloMax > 0 ? 3600 / $cicloMax : 0;
+    $aparicoesDiaMin = $aparicoesHoraMin * $normalized['horas_por_dia'];
 
     return [
         'anunciantes' => $anunciantes,
@@ -111,6 +184,11 @@ function painel_calculate_status(array $config): array
         'tela_dia_minutos' => (int) round(($aparicoesDia * $duracao) / 60),
         'ciclo_segundos' => (int) round($ciclo),
         'duracao_segundos' => $duracao,
+        'aparicoes_hora_min' => (int) round($aparicoesHoraMin),
+        'aparicoes_dia_min' => (int) round($aparicoesDiaMin),
+        'aparicoes_mes_min' => (int) round($aparicoesDiaMin * 30),
+        'tela_dia_min_minutos' => (int) round(($aparicoesDiaMin * $duracao) / 60),
+        'ciclo_max_segundos' => (int) round($cicloMax),
     ];
 }
 
