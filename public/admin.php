@@ -40,6 +40,10 @@ $loginError = '';
 $painelErrors = [];
 $painelForm = null;
 $painelCeilingConfirmation = '';
+$segmentErrors = [];
+$segmentForm = null;
+$pricingErrors = [];
+$pricingForm = null;
 
 $isValidCsrf = static function (): bool {
   return hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '');
@@ -101,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_painel']) && !em
 
   $painelForm = [
     'anunciantes_regulares' => trim((string) ($_POST['anunciantes_regulares'] ?? '')),
+    'anunciantes_com_exclusividade' => trim((string) ($_POST['anunciantes_com_exclusividade'] ?? '')),
     'einstein_intercalado' => isset($_POST['einstein_intercalado']),
     'duracao_segundos' => trim((string) ($_POST['duracao_segundos'] ?? '')),
     'horas_por_dia' => trim((string) ($_POST['horas_por_dia'] ?? '')),
@@ -116,6 +121,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_painel']) && !em
   if ($painelErrors === [] && is_array($validation['config'])) {
     $currentConfig = painel_read_config();
     $proposedConfig = $validation['config'];
+    $proposedConfig['segmentos'] = $currentConfig['segmentos'];
+    $proposedConfig['planos'] = $currentConfig['planos'];
+    $proposedConfig['preco_minimo'] = $currentConfig['preco_minimo'];
     $ceilingWarning = painel_ceiling_increase_warning($currentConfig, $proposedConfig);
     $ceilingConfirmed = (string) ($_POST['confirm_teto'] ?? '') === '1';
 
@@ -130,6 +138,113 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_painel']) && !em
       } catch (Throwable $error) {
         $painelErrors[] = 'Não foi possível salvar a configuração privada.';
       }
+    }
+  }
+}
+
+// --- Ação: atualizar segmentos e disponibilidade ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_segmentos']) && !empty($_SESSION['admin_logged'])) {
+  if (!$isValidCsrf()) {
+    http_response_code(403);
+    exit('Sessão expirada. Recarregue a página e tente novamente.');
+  }
+
+  $currentConfig = painel_read_config();
+  $slugs = is_array($_POST['segmento_slug'] ?? null) ? $_POST['segmento_slug'] : [];
+  $names = is_array($_POST['segmento_nome'] ?? null) ? $_POST['segmento_nome'] : [];
+  $occupiedValues = is_array($_POST['segmentos_ocupados'] ?? null) ? $_POST['segmentos_ocupados'] : [];
+  $occupiedSet = array_fill_keys(array_map('strval', $occupiedValues), true);
+  $segments = [];
+
+  foreach ($names as $index => $rawName) {
+    $name = trim((string) $rawName);
+    $slug = painel_slugify((string) ($slugs[$index] ?? $name));
+    if ($name === '' || $slug === '') {
+      continue;
+    }
+    $segments[] = [
+      'slug' => $slug,
+      'nome' => $name,
+      'ocupado' => isset($occupiedSet[$slug]),
+    ];
+  }
+
+  $newCategory = trim((string) ($_POST['nova_categoria'] ?? ''));
+  if ($newCategory !== '') {
+    $newSlug = painel_slugify($newCategory);
+    $existingSlugs = array_column(painel_normalize_segments($segments), 'slug');
+    if ($newSlug === '' || in_array($newSlug, $existingSlugs, true)) {
+      $segmentErrors[] = 'A nova categoria é inválida ou já existe.';
+    } else {
+      $segments[] = ['slug' => $newSlug, 'nome' => $newCategory, 'ocupado' => false];
+    }
+  }
+
+  $segmentValidation = painel_validate_segments_config(
+    $segments,
+    (int) $currentConfig['anunciantes_com_exclusividade']
+  );
+  $segmentForm = $segmentValidation['segments'];
+  $segmentErrors = [...$segmentErrors, ...$segmentValidation['errors']];
+
+  if ($segmentErrors === []) {
+    try {
+      $currentConfig['segmentos'] = $segmentValidation['segments'];
+      $currentConfig['atualizado_em'] = date('Y-m-d');
+      painel_write_config($currentConfig);
+      $_SESSION['segmentos_flash'] = 'Registro de segmentos atualizado.';
+      header('Location: admin.php?tab=segmentos');
+      exit;
+    } catch (Throwable $error) {
+      $segmentErrors[] = 'Não foi possível salvar o registro de segmentos.';
+    }
+  }
+}
+
+// --- Ação: atualizar preços e campanhas ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_precos']) && !empty($_SESSION['admin_logged'])) {
+  if (!$isValidCsrf()) {
+    http_response_code(403);
+    exit('Sessão expirada. Recarregue a página e tente novamente.');
+  }
+
+  $postedPlans = is_array($_POST['planos'] ?? null) ? $_POST['planos'] : [];
+  $pricingForm = [];
+  foreach (painel_plan_definitions() as $definition) {
+    $slug = $definition['slug'];
+    $row = is_array($postedPlans[$slug] ?? null) ? $postedPlans[$slug] : [];
+    $plan = [
+      ...$definition,
+      'preco' => trim((string) ($row['preco'] ?? '')),
+    ];
+    $promotionalPrice = trim((string) ($row['preco_promocional'] ?? ''));
+    $campaignLabel = trim((string) ($row['rotulo'] ?? ''));
+    $validUntil = trim((string) ($row['validade'] ?? ''));
+    if ($promotionalPrice !== '' || $campaignLabel !== '' || $validUntil !== '') {
+      $plan['campanha'] = [
+        'preco_promocional' => $promotionalPrice,
+        'rotulo' => $campaignLabel,
+        'validade' => $validUntil,
+      ];
+    }
+    $pricingForm[] = $plan;
+  }
+
+  $minimumPriceForm = trim((string) ($_POST['preco_minimo'] ?? ''));
+  $pricingValidation = painel_validate_pricing_config($pricingForm, $minimumPriceForm);
+  $pricingErrors = $pricingValidation['errors'];
+  if ($pricingErrors === [] && is_array($pricingValidation['planos'])) {
+    try {
+      $currentConfig = painel_read_config();
+      $currentConfig['planos'] = $pricingValidation['planos'];
+      $currentConfig['preco_minimo'] = $pricingValidation['preco_minimo'];
+      $currentConfig['atualizado_em'] = date('Y-m-d');
+      painel_write_config($currentConfig);
+      $_SESSION['precos_flash'] = 'Tabela de preços atualizada.';
+      header('Location: admin.php?tab=precos');
+      exit;
+    } catch (Throwable $error) {
+      $pricingErrors[] = 'Não foi possível salvar a tabela de preços.';
     }
   }
 }
@@ -186,7 +301,7 @@ if (empty($_SESSION['admin_logged'])):
 <?php
 // --- Dashboard (logado) ---
 $tab = $_GET['tab'] ?? 'crm';
-if (!in_array($tab, ['crm', 'analytics', 'painel'], true)) {
+if (!in_array($tab, ['crm', 'analytics', 'painel', 'segmentos', 'precos'], true)) {
   $tab = 'crm';
 }
 
@@ -195,6 +310,37 @@ $painelStatus = painel_calculate_status($painelConfig);
 $painelInput = $painelForm ?? $painelConfig;
 $painelFlash = (string) ($_SESSION['painel_flash'] ?? '');
 unset($_SESSION['painel_flash']);
+$segmentDisplay = $segmentForm ?? (
+  $painelConfig['segmentos'] !== []
+    ? $painelConfig['segmentos']
+    : painel_default_segments()
+);
+$occupiedSegments = count(array_filter(
+  $painelConfig['segmentos'],
+  static fn(array $segment): bool => $segment['ocupado']
+));
+$segmentWarning = painel_segments_warning(
+  (int) $painelConfig['anunciantes_com_exclusividade'],
+  $occupiedSegments
+);
+$segmentFlash = (string) ($_SESSION['segmentos_flash'] ?? '');
+unset($_SESSION['segmentos_flash']);
+$storedPlansBySlug = [];
+foreach ($painelConfig['planos'] as $storedPlan) {
+  $storedPlansBySlug[$storedPlan['slug']] = $storedPlan;
+}
+$pricingDisplay = $pricingForm ?? array_map(
+  static fn(array $definition): array => $storedPlansBySlug[$definition['slug']] ?? [
+    ...$definition,
+    'preco' => '',
+  ],
+  painel_plan_definitions()
+);
+$minimumPriceInput = $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_precos'])
+  ? (string) ($_POST['preco_minimo'] ?? '')
+  : (string) $painelConfig['preco_minimo'];
+$pricingFlash = (string) ($_SESSION['precos_flash'] ?? '');
+unset($_SESSION['precos_flash']);
 
 // CRM data
 $crmFile = __DIR__ . '/crm-data/leads.json';
@@ -324,7 +470,7 @@ function formatLeadOrigin($lead) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= htmlspecialchars(['crm' => 'CRM', 'analytics' => 'Analytics', 'painel' => 'Painel'][$tab]) ?> • Gênio Visual</title>
+  <title><?= htmlspecialchars(['crm' => 'CRM', 'analytics' => 'Analytics', 'painel' => 'Painel', 'segmentos' => 'Segmentos', 'precos' => 'Preços'][$tab]) ?> • Gênio Visual</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>body{background:#0a0a0a;}</style>
 </head>
@@ -361,6 +507,14 @@ function formatLeadOrigin($lead) {
       <a href="admin.php?tab=painel"
          class="px-5 py-3 text-sm font-medium transition border-b-2 <?= $tab === 'painel' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300' ?>">
         Painel
+      </a>
+      <a href="admin.php?tab=segmentos"
+         class="px-5 py-3 text-sm font-medium transition border-b-2 <?= $tab === 'segmentos' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300' ?>">
+        Segmentos
+      </a>
+      <a href="admin.php?tab=precos"
+         class="px-5 py-3 text-sm font-medium transition border-b-2 <?= $tab === 'precos' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300' ?>">
+        Preços
       </a>
     </div>
   </header>
@@ -596,6 +750,14 @@ function formatLeadOrigin($lead) {
             </label>
 
             <label class="block">
+              <span class="block text-sm text-zinc-400 mb-1.5">Anunciantes com exclusividade</span>
+              <input type="number" name="anunciantes_com_exclusividade" min="0" step="1" required
+                value="<?= htmlspecialchars((string) $painelInput['anunciantes_com_exclusividade']) ?>"
+                class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+              <span class="mt-1.5 block text-xs text-zinc-500">Anunciantes no plano mensal não travam segmento.</span>
+            </label>
+
+            <label class="block">
               <span class="block text-sm text-zinc-400 mb-1.5">Vagas totais</span>
               <input type="number" name="vagas_totais" min="0" step="1" required
                 value="<?= htmlspecialchars((string) $painelInput['vagas_totais']) ?>"
@@ -735,6 +897,239 @@ function formatLeadOrigin($lead) {
       })();
     </script>
 
+  <?php elseif ($tab === 'precos'): ?>
+    <!-- ===================== ABA PREÇOS ===================== -->
+    <section class="mx-auto max-w-6xl bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+      <div class="mb-6">
+        <h2 class="text-xl font-semibold">Preços e campanhas</h2>
+        <p class="mt-1 text-sm text-zinc-500">
+          Alterações salvas entram no site e nas mensagens sem novo deploy. Campanhas expiram automaticamente na data informada.
+        </p>
+      </div>
+
+      <?php if ($pricingFlash !== ''): ?>
+        <p class="mb-5 rounded-lg border border-green-700 bg-green-950/40 px-4 py-3 text-sm text-green-300">
+          <?= htmlspecialchars($pricingFlash) ?>
+        </p>
+      <?php endif; ?>
+
+      <?php if ($pricingErrors !== []): ?>
+        <div class="mb-5 rounded-lg border border-red-800 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+          <ul class="list-disc space-y-1 pl-5">
+            <?php foreach ($pricingErrors as $error): ?>
+              <li><?= htmlspecialchars($error) ?></li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+      <?php endif; ?>
+
+      <form method="POST" action="admin.php?tab=precos" class="space-y-5">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+        <input type="hidden" name="save_precos" value="1">
+
+        <label class="block max-w-sm">
+          <span class="mb-1.5 block text-sm text-zinc-400">Piso mínimo permitido</span>
+          <input type="number" name="preco_minimo"
+            min="<?= PAINEL_PRECO_MINIMO_ABSOLUTO ?>" step="1" required
+            value="<?= htmlspecialchars($minimumPriceInput) ?>"
+            class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+          <span class="mt-1.5 block text-xs text-zinc-500">
+            Nenhum preço cheio ou promocional pode ficar abaixo deste piso.
+          </span>
+        </label>
+
+        <div class="grid gap-5 lg:grid-cols-2">
+          <?php foreach ($pricingDisplay as $plan): ?>
+            <?php
+              $slug = (string) $plan['slug'];
+              $campaign = is_array($plan['campanha'] ?? null) ? $plan['campanha'] : [];
+              $currentPublicPlan = painel_find_plan($painelConfig, $slug);
+            ?>
+            <fieldset class="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
+              <legend class="px-2 font-semibold text-white">
+                <?= htmlspecialchars((string) $plan['nome']) ?>
+                <?php if (!empty($plan['destaque'])): ?>
+                  <span class="ml-2 text-xs text-cyan-400">Mais vendido</span>
+                <?php endif; ?>
+              </legend>
+              <p class="mb-4 text-xs text-zinc-500">
+                <?= (int) $plan['meses'] ?> mês(es) ·
+                <?= !empty($plan['exclusividade']) ? 'com exclusividade' : 'sem exclusividade' ?>
+              </p>
+
+              <?php if ($currentPublicPlan !== null): ?>
+                <p class="mb-4 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-400">
+                  Publicado agora:
+                  <strong class="text-white">
+                    R$ <?= number_format((int) $currentPublicPlan['preco_efetivo'], 0, ',', '.') ?>/mês
+                  </strong>
+                  <?= $currentPublicPlan['em_campanha'] ? ' · campanha vigente' : ' · preço cheio' ?>
+                </p>
+              <?php endif; ?>
+
+              <div class="space-y-4">
+                <label class="block">
+                  <span class="mb-1.5 block text-sm text-zinc-400">Preço mensal cheio</span>
+                  <input type="number" name="planos[<?= htmlspecialchars($slug) ?>][preco]"
+                    min="<?= PAINEL_PRECO_MINIMO_ABSOLUTO ?>" step="1" required
+                    value="<?= htmlspecialchars((string) ($plan['preco'] ?? '')) ?>"
+                    class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                </label>
+
+                <div class="border-t border-zinc-800 pt-4">
+                  <p class="mb-3 text-sm font-medium text-amber-300">Campanha opcional</p>
+                  <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="block">
+                      <span class="mb-1.5 block text-xs text-zinc-500">Preço promocional</span>
+                      <input type="number" name="planos[<?= htmlspecialchars($slug) ?>][preco_promocional]"
+                        min="<?= PAINEL_PRECO_MINIMO_ABSOLUTO ?>" step="1"
+                        value="<?= htmlspecialchars((string) ($campaign['preco_promocional'] ?? '')) ?>"
+                        class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </label>
+                    <label class="block">
+                      <span class="mb-1.5 block text-xs text-zinc-500">Validade obrigatória</span>
+                      <input type="date" name="planos[<?= htmlspecialchars($slug) ?>][validade]"
+                        value="<?= htmlspecialchars((string) ($campaign['validade'] ?? '')) ?>"
+                        class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </label>
+                  </div>
+                  <label class="mt-3 block">
+                    <span class="mb-1.5 block text-xs text-zinc-500">Rótulo da campanha</span>
+                    <input type="text" name="planos[<?= htmlspecialchars($slug) ?>][rotulo]"
+                      maxlength="120"
+                      value="<?= htmlspecialchars((string) ($campaign['rotulo'] ?? '')) ?>"
+                      placeholder="Motivo real da oferta"
+                      class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+          <?php endforeach; ?>
+        </div>
+
+        <button type="submit"
+          class="w-full rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 py-3 font-semibold text-white hover:opacity-90">
+          Publicar tabela de preços
+        </button>
+      </form>
+    </section>
+
+  <?php elseif ($tab === 'segmentos'): ?>
+    <!-- ===================== ABA SEGMENTOS ===================== -->
+    <section class="mx-auto max-w-5xl bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+      <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-semibold">Registro de segmentos</h2>
+          <p class="mt-1 text-sm text-zinc-500">
+            Marque apenas categorias com contrato ativo. Nenhum nome de cliente será publicado.
+          </p>
+        </div>
+        <div class="rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-2 text-sm">
+          <strong class="text-white"><?= $occupiedSegments ?></strong>
+          <span class="text-zinc-500"> ocupados para </span>
+          <strong class="text-white"><?= (int) $painelConfig['anunciantes_com_exclusividade'] ?></strong>
+          <span class="text-zinc-500"> anunciantes com exclusividade</span>
+        </div>
+      </div>
+
+      <?php if ($segmentWarning !== null): ?>
+        <div class="mb-5 rounded-lg border border-amber-700 bg-amber-950/40 px-4 py-3 text-sm text-amber-200">
+          <?= htmlspecialchars($segmentWarning) ?>
+        </div>
+      <?php else: ?>
+        <div class="mb-5 rounded-lg border border-green-700 bg-green-950/40 px-4 py-3 text-sm text-green-300">
+          Registro coerente: cada anunciante regular possui um segmento marcado.
+        </div>
+      <?php endif; ?>
+
+      <?php if ($painelConfig['segmentos'] === []): ?>
+        <p class="mb-5 rounded-lg border border-cyan-800 bg-cyan-950/30 px-4 py-3 text-sm text-cyan-200">
+          A configuração ainda não possui categorias. As categorias padrão estão prontas abaixo; salve para inicializar o registro privado.
+        </p>
+      <?php endif; ?>
+
+      <?php if ($segmentFlash !== ''): ?>
+        <p class="mb-5 rounded-lg border border-green-700 bg-green-950/40 px-4 py-3 text-sm text-green-300">
+          <?= htmlspecialchars($segmentFlash) ?>
+        </p>
+      <?php endif; ?>
+
+      <?php if ($segmentErrors !== []): ?>
+        <div class="mb-5 rounded-lg border border-red-800 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+          <ul class="list-disc space-y-1 pl-5">
+            <?php foreach ($segmentErrors as $error): ?>
+              <li><?= htmlspecialchars($error) ?></li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+      <?php endif; ?>
+
+      <form method="POST" action="admin.php?tab=segmentos" class="space-y-4">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+        <input type="hidden" name="save_segmentos" value="1">
+
+        <?php foreach ($segmentDisplay as $segment): ?>
+          <?php
+            $segmentSlug = (string) $segment['slug'];
+            $waitlistLeads = array_values(array_filter(
+              $leads,
+              static function(array $lead) use ($segmentSlug): bool {
+                if (($lead['lista_espera'] ?? false) !== true) {
+                  return false;
+                }
+                $leadSlug = (string) ($lead['segmento_slug'] ?? painel_slugify((string) ($lead['segmento'] ?? '')));
+                return $leadSlug === $segmentSlug;
+              }
+            ));
+          ?>
+          <div class="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
+            <div class="grid items-center gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+              <label class="flex items-center gap-3">
+                <input type="checkbox" name="segmentos_ocupados[]" value="<?= htmlspecialchars($segmentSlug) ?>"
+                  <?= !empty($segment['ocupado']) ? 'checked' : '' ?>
+                  class="h-5 w-5 accent-cyan-500">
+                <span class="text-xs uppercase tracking-wide text-zinc-500">Ocupado</span>
+              </label>
+              <input type="hidden" name="segmento_slug[]" value="<?= htmlspecialchars($segmentSlug) ?>">
+              <input type="text" name="segmento_nome[]" value="<?= htmlspecialchars((string) $segment['nome']) ?>"
+                maxlength="80" required
+                class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+              <span class="text-xs text-zinc-500"><?= count($waitlistLeads) ?> na espera</span>
+            </div>
+
+            <?php if ($waitlistLeads !== []): ?>
+              <details class="mt-3 border-t border-zinc-800 pt-3">
+                <summary class="cursor-pointer text-sm text-amber-300">Ver lista de espera</summary>
+                <ul class="mt-2 space-y-1 text-sm text-zinc-400">
+                  <?php foreach ($waitlistLeads as $lead): ?>
+                    <li>
+                      <?= htmlspecialchars((string) ($lead['nome'] ?? 'Sem nome')) ?>
+                      · <?= htmlspecialchars((string) ($lead['email'] ?? '')) ?>
+                      · <?= htmlspecialchars((string) ($lead['data_hora'] ?? '')) ?>
+                    </li>
+                  <?php endforeach; ?>
+                </ul>
+              </details>
+            <?php endif; ?>
+          </div>
+        <?php endforeach; ?>
+
+        <div class="rounded-xl border border-dashed border-zinc-700 p-4">
+          <label for="nova_categoria" class="mb-2 block text-sm font-medium text-zinc-300">
+            Acrescentar categoria
+          </label>
+          <input id="nova_categoria" type="text" name="nova_categoria" maxlength="80"
+            placeholder="Nome da nova categoria"
+            class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+        </div>
+
+        <button type="submit"
+          class="w-full rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 py-3 font-semibold text-white hover:opacity-90">
+          Salvar registro de segmentos
+        </button>
+      </form>
+    </section>
+
   <?php else: ?>
     <!-- ===================== ABA CRM ===================== -->
 
@@ -776,6 +1171,7 @@ function formatLeadOrigin($lead) {
               <th class="py-3 px-4">WhatsApp</th>
               <th class="py-3 px-4">Empresa</th>
               <th class="py-3 px-4">Segmento</th>
+              <th class="py-3 px-4">Status</th>
               <th class="py-3 px-4">Plano</th>
               <th class="py-3 px-4">Mensagem</th>
               <th class="py-3 px-4">Origem</th>
@@ -804,6 +1200,13 @@ function formatLeadOrigin($lead) {
                 </td>
                 <td class="py-4 px-4 text-sm text-zinc-300"><?= htmlspecialchars($lead['empresa'] ?? '') ?></td>
                 <td class="py-4 px-4 text-sm text-zinc-300"><?= htmlspecialchars($lead['segmento'] ?? '') ?></td>
+                <td class="py-4 px-4">
+                  <?php if (($lead['lista_espera'] ?? false) === true): ?>
+                    <span class="rounded bg-amber-600/20 px-2 py-1 text-xs font-medium text-amber-300">Lista de espera</span>
+                  <?php else: ?>
+                    <span class="text-xs text-zinc-500">Proposta</span>
+                  <?php endif; ?>
+                </td>
                 <td class="py-4 px-4">
                   <span class="bg-blue-600/20 text-blue-400 px-2 py-1 rounded text-xs font-medium">
                     <?= htmlspecialchars($lead['plano'] ?? '') ?>
@@ -856,6 +1259,9 @@ function formatLeadOrigin($lead) {
               <p><span class="text-zinc-500">Segmento:</span>
                 <span class="text-zinc-300 ml-1"><?= htmlspecialchars($lead['segmento'] ?? '') ?></span>
               </p>
+              <?php if (($lead['lista_espera'] ?? false) === true): ?>
+                <p><span class="rounded bg-amber-600/20 px-2 py-1 text-xs font-medium text-amber-300">Lista de espera</span></p>
+              <?php endif; ?>
               <p><span class="text-zinc-500">Mensagem:</span>
                 <span class="text-zinc-400 ml-1"><?= htmlspecialchars($lead['mensagem'] ?? '') ?></span>
               </p>

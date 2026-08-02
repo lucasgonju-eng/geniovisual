@@ -1,9 +1,11 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import Formulario from "@/components/Formulario";
+import Exclusividade from "@/components/Exclusividade";
 import Planos from "@/components/Planos";
 import Vantagens from "@/components/Vantagens";
+import { DEFAULT_SEGMENTS } from "@/lib/segments";
 
 const painelStatus = {
   anunciantes: 3,
@@ -20,6 +22,19 @@ const painelStatus = {
   aparicoes_mes_min: 8_100,
   tela_dia_min_minutos: 45,
   ciclo_max_segundos: 240,
+  segmentos: DEFAULT_SEGMENTS.map((segment, index) => ({
+    ...segment,
+    ocupado: index < 3,
+  })),
+  segmentos_livres: 10,
+  segmentos_consistente: true,
+  planos: [
+    { slug: "mensal", nome: "Mensal", meses: 1, preco: 4_500, preco_efetivo: 4_500, em_campanha: false, rotulo: null, validade: null, exclusividade: false, destaque: false },
+    { slug: "trimestral", nome: "Trimestral", meses: 3, preco: 3_600, preco_efetivo: 3_600, em_campanha: false, rotulo: null, validade: null, exclusividade: true, destaque: false },
+    { slug: "semestral", nome: "Semestral", meses: 6, preco: 3_150, preco_efetivo: 3_150, em_campanha: false, rotulo: null, validade: null, exclusividade: true, destaque: false },
+    { slug: "anual", nome: "Anual", meses: 12, preco: 2_700, preco_efetivo: 2_700, em_campanha: false, rotulo: null, validade: null, exclusividade: true, destaque: true },
+  ],
+  preco_a_partir_de: 2_700,
 };
 
 afterEach(() => {
@@ -27,7 +42,7 @@ afterEach(() => {
 });
 
 describe("copy operacional da landing", () => {
-  it("usa o teto do endpoint e mantém exatamente três planos", async () => {
+  it("usa o teto do endpoint e mantém os quatro planos na ordem comercial", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => painelStatus,
@@ -37,6 +52,7 @@ describe("copy operacional da landing", () => {
     render(
       <>
         <Vantagens />
+        <Exclusividade />
         <Planos />
         <Formulario />
       </>,
@@ -48,18 +64,69 @@ describe("copy operacional da landing", () => {
       ).toBeInTheDocument();
     });
     expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/painel-status.php",
+      expect.objectContaining({ cache: "no-store" }),
+    );
 
     const planNames = ["Trimestral", "Semestral", "Anual"];
-    expect(
-      screen.getAllByRole("heading", { level: 3 }).filter((heading) =>
-        planNames.includes(heading.textContent ?? ""),
-      ),
-    ).toHaveLength(3);
+    const planHeadings = screen.getAllByRole("heading", { level: 3 }).filter((heading) =>
+      planNames.includes(heading.textContent ?? ""),
+    );
+    expect(planHeadings).toHaveLength(3);
+    expect(planHeadings.map((heading) => heading.textContent)).toEqual(planNames);
     expect(screen.getAllByText(/frequência garantida: 15 aparições\/hora/i)).toHaveLength(3);
+    expect(screen.getByText("Mais vendido")).toBeInTheDocument();
     expect(screen.queryByText(/prioridade.*rodízio/i)).not.toBeInTheDocument();
 
     const planSelect = screen.getByRole("combobox", { name: /plano desejado/i });
     expect(planSelect.querySelectorAll("option")).toHaveLength(4);
-    expect(screen.getByPlaceholderText(/imobiliário, saúde, alimentação/i)).toBeRequired();
+    const segmentSelect = screen.getByRole("combobox", { name: /segmento/i });
+    expect(segmentSelect.querySelectorAll("option")).toHaveLength(14);
+    expect(screen.getByText(/10 segmentos ainda livres/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("link", { name: /automotivo ocupado/i }));
+    expect(segmentSelect).toHaveValue("automotivo");
+    expect(screen.getByText(/este segmento já está ocupado/i)).toBeInTheDocument();
+
   });
+
+  it("omite disponibilidade quando o registro é inconsistente", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          ...painelStatus,
+          segmentos: painelStatus.segmentos.map((segment, index) => ({
+            ...segment,
+            ocupado: index < 2,
+          })),
+          segmentos_livres: 11,
+          segmentos_consistente: false,
+        }),
+      }),
+    );
+
+    render(<Exclusividade />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Automotivo")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Livre")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ocupado")).not.toBeInTheDocument();
+    expect(screen.queryByText(/segmentos ainda livres/i)).not.toBeInTheDocument();
+  });
+
+  it("usa a lista estática sem disponibilidade quando o endpoint falha", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+
+    render(<Exclusividade />);
+
+    expect(screen.getByText("Automotivo")).toBeInTheDocument();
+    expect(screen.getByText("Pet")).toBeInTheDocument();
+    expect(screen.queryByText("Livre")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ocupado")).not.toBeInTheDocument();
+  });
+
 });

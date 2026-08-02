@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MessageCircle, Send, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { usePainelStatus } from "@/hooks/usePainelStatus";
 import { getAttribution } from "@/lib/attribution";
 import { PLAN_OPTIONS } from "@/lib/plans";
+import { findPlanPrice, formatCampaignDate, formatPrice } from "@/lib/pricing";
+import { DEFAULT_SEGMENTS, SEGMENT_SELECT_EVENT } from "@/lib/segments";
 import { buildWhatsAppLink, trackWhatsAppClick } from "@/lib/whatsapp";
 
 const pitchText = "Olá! Quero saber se o meu segmento está livre para anunciar no painel da Gênio Visual.";
@@ -25,6 +27,37 @@ const Formulario = () => {
     consent: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const configuredSegments = painel.segmentos.length > 0 ? painel.segmentos : DEFAULT_SEGMENTS;
+  const showSegmentAvailability = isLive
+    && painel.segmentos.length > 0
+    && painel.segmentos_consistente;
+  const selectedSegment = configuredSegments.find((segment) => segment.slug === form.segmento);
+  const isOccupiedSegment = showSegmentAvailability && selectedSegment?.ocupado === true;
+  const isMonthlyPlan = form.plano === "Mensal";
+  const isWaitlist = isOccupiedSegment && !isMonthlyPlan;
+  const selectedPlanPrice = findPlanPrice(
+    painel.planos,
+    form.plano.toLocaleLowerCase("pt-BR"),
+  );
+  const formWhatsAppMessage = selectedPlanPrice
+    ? `Olá! Tenho interesse no plano ${selectedPlanPrice.nome} por ${formatPrice(selectedPlanPrice.preco_efetivo)} por mês${
+      selectedPlanPrice.em_campanha && selectedPlanPrice.rotulo && selectedPlanPrice.validade
+        ? `, na campanha "${selectedPlanPrice.rotulo}", válida até ${formatCampaignDate(selectedPlanPrice.validade)}`
+        : ""
+    }.`
+    : pitchText;
+
+  useEffect(() => {
+    const handleSegmentSelection = (event: Event) => {
+      const slug = (event as CustomEvent<{ slug?: string }>).detail?.slug;
+      if (slug) {
+        setForm((current) => ({ ...current, segmento: slug }));
+      }
+    };
+    window.addEventListener(SEGMENT_SELECT_EVENT, handleSegmentSelection);
+    return () => window.removeEventListener(SEGMENT_SELECT_EVENT, handleSegmentSelection);
+  }, []);
+
   const setFieldMessage = (event: React.InvalidEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const field = event.currentTarget;
     const label = field.getAttribute("data-label") ?? "Este campo";
@@ -62,7 +95,9 @@ const Formulario = () => {
           email: form.email,
           whatsapp: form.whatsapp,
           empresa: form.empresa || "Não informado",
-          segmento: form.segmento,
+          segmento: selectedSegment?.nome || form.segmento,
+          segmento_slug: form.segmento,
+          lista_espera: isWaitlist,
           plano: form.plano || "Não informado",
           mensagem: form.mensagem || "Não informado",
           subject: `Solicitação de proposta - ${form.name}`,
@@ -111,7 +146,7 @@ const Formulario = () => {
               Se quiser acelerar o atendimento, abra o WhatsApp agora mesmo.
             </p>
             <a
-              href={buildWhatsAppLink(pitchText, "formulario")}
+              href={buildWhatsAppLink(formWhatsAppMessage, "formulario")}
               onClick={() => trackWhatsAppClick("formulario", form.plano)}
               target="_blank"
               rel="noopener noreferrer"
@@ -130,7 +165,7 @@ const Formulario = () => {
     <section id="proposta" className="scroll-mt-28 py-20 relative particles-bg">
       <div className="container mx-auto px-4">
         <h2 className="font-heading text-3xl sm:text-4xl font-bold text-center mb-12">
-          Veja se o seu <span className="neon-gradient-text">segmento ainda está livre</span>.
+          Escolha seu plano e <span className="neon-gradient-text">consulte seu segmento</span>.
         </h2>
 
         <div className="grid gap-8 max-w-3xl mx-auto">
@@ -151,8 +186,8 @@ const Formulario = () => {
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
-                {isLive ? `São ${painel.vagas_restantes} vagas e um anunciante por segmento. ` : "Trabalhamos com um anunciante por segmento. "}
-                Me diga o seu ramo e eu retorno com a disponibilidade e o valor.
+                {isLive ? `São ${painel.vagas_restantes} vagas no rodízio. ` : ""}
+                A exclusividade de segmento começa no plano trimestral. Me diga o seu ramo e eu retorno com a disponibilidade e o valor.
               </p>
             </div>
             <div>
@@ -213,19 +248,30 @@ const Formulario = () => {
             </div>
             <div>
               <label htmlFor="segmento" className="block text-sm font-medium mb-1.5">Segmento *</label>
-              <input
+              <select
                 id="segmento"
-                type="text"
                 value={form.segmento}
                 onChange={(e) => setForm({ ...form, segmento: e.target.value })}
                 onInvalid={setFieldMessage}
                 onInput={clearFieldMessage}
                 data-label="Segmento"
                 className="w-full rounded-lg bg-muted border border-border px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="Ex.: imobiliário, saúde, alimentação"
-                maxLength={120}
                 required
-              />
+              >
+                <option value="">Selecione o seu segmento</option>
+                {configuredSegments.map((segment) => (
+                  <option key={segment.slug} value={segment.slug}>
+                    {segment.nome}{showSegmentAvailability && segment.ocupado ? " — ocupado" : ""}
+                  </option>
+                ))}
+              </select>
+              {isOccupiedSegment && (
+                <p className="mt-2 rounded-lg border border-amber-700/60 bg-amber-950/30 px-3 py-2 text-sm text-amber-200">
+                  {isMonthlyPlan
+                    ? "Seu segmento já tem um anunciante com exclusividade. No plano mensal isso não impede sua entrada, mas a categoria não fica travada para você."
+                    : "Este segmento já está ocupado. Posso avisar assim que vagar — seu contato será incluído na lista de espera."}
+                </p>
+              )}
             </div>
             <div>
               <label htmlFor="plano" className="block text-sm font-medium mb-1.5">Plano desejado</label>
@@ -272,10 +318,10 @@ const Formulario = () => {
               disabled={isSubmitting}
             >
               <Send className="w-5 h-5" />
-              {isSubmitting ? "Enviando..." : "Quero saber se meu segmento está livre"}
+              {isSubmitting ? "Enviando..." : "Quero receber uma proposta"}
             </button>
             <a
-              href={buildWhatsAppLink(pitchText, "formulario_alternativa")}
+              href={buildWhatsAppLink(formWhatsAppMessage, "formulario_alternativa")}
               onClick={() => trackWhatsAppClick("formulario_alternativa", form.plano)}
               target="_blank"
               rel="noopener noreferrer"

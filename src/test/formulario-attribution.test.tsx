@@ -26,11 +26,11 @@ describe("envio atribuído do formulário", () => {
     fireEvent.change(screen.getByPlaceholderText("Seu nome"), { target: { value: "Lead Teste" } });
     fireEvent.change(screen.getByPlaceholderText("seu@email.com"), { target: { value: "lead@example.com" } });
     fireEvent.change(screen.getByPlaceholderText("(62) 99999-9999"), { target: { value: "(62) 99999-0000" } });
-    fireEvent.change(screen.getByPlaceholderText(/imobiliário, saúde, alimentação/i), {
-      target: { value: "Imobiliário" },
+    fireEvent.change(screen.getByRole("combobox", { name: /segmento/i }), {
+      target: { value: "imobiliario" },
     });
     fireEvent.click(screen.getByRole("checkbox"));
-    fireEvent.click(screen.getByRole("button", { name: /quero saber se meu segmento está livre/i }));
+    fireEvent.click(screen.getByRole("button", { name: /quero receber uma proposta/i }));
 
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === "POST")).toBe(true);
@@ -45,6 +45,8 @@ describe("envio atribuído do formulário", () => {
       utm_medium: "cpc",
       utm_campaign: "teste",
       segmento: "Imobiliário",
+      segmento_slug: "imobiliario",
+      lista_espera: false,
       consent: true,
       consent_text: "Autorizo o contato da Gênio Visual para envio de proposta comercial.",
     });

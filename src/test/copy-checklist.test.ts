@@ -28,6 +28,7 @@ const blockedClaims = [
   ["custo-benefício", "e", "ROI"].join(" "),
   ["15", "marcas"].join(" "),
   ["15", "anunciantes"].join(" "),
+  ["13", "vagas"].join(" "),
   ["10", "a", "15", "segundos"].join(" "),
   ["prioridade", "máxima"].join(" "),
   ["prioridade", "total"].join(" "),
@@ -58,6 +59,21 @@ describe("checklist de copy", () => {
         if (contents.includes(claim.toLocaleLowerCase("pt-BR"))) {
           violations.push(`${path.relative(root, file)}: ${claim}`);
         }
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
+
+  it("não fixa valores em reais nos componentes da landing", async () => {
+    const componentDirectory = path.join(process.cwd(), "src", "components");
+    const componentFiles = await listTextFiles(componentDirectory);
+    const violations: string[] = [];
+
+    for (const file of componentFiles) {
+      const contents = await readFile(file, "utf8");
+      if (/R\$\s*\d/.test(contents)) {
+        violations.push(path.relative(process.cwd(), file));
       }
     }
 
