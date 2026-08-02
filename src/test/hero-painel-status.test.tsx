@@ -8,34 +8,39 @@ afterEach(() => {
 });
 
 describe("status operacional no Hero", () => {
-  it("renderiza fallback conservador quando o endpoint falha", async () => {
+  it("renderiza somente o piso quando o endpoint falha", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
 
     render(<Hero />);
 
-    expect(screen.getByText("9", { exact: true })).toBeInTheDocument();
-    expect(screen.getByText("6", { exact: true })).toBeInTheDocument();
     expect(
-      screen.getByText("Sua marca: 360 aparições por dia — 1 hora de tela, todo dia."),
+      screen.getByText("No mínimo 15 aparições por hora — 45 minutos de tela por dia."),
     ).toBeInTheDocument();
-    expect(screen.queryByText("—")).not.toBeInTheDocument();
+    expect(screen.queryByText("Vantagem de entrar agora")).not.toBeInTheDocument();
+    expect(screen.queryByText("anunciantes hoje")).not.toBeInTheDocument();
+    expect(screen.queryByText("vagas restantes")).not.toBeInTheDocument();
   });
 
-  it("atualiza a landing com os valores retornados pelo endpoint", async () => {
+  it("separa garantia da vantagem atual retornada pelo endpoint", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          anunciantes: 10,
-          vagas_totais: 15,
-          vagas_restantes: 5,
-          aparicoes_hora: 18,
-          aparicoes_dia: 324,
-          aparicoes_mes: 9_720,
-          tela_dia_minutos: 54,
-          ciclo_segundos: 200,
+          anunciantes: 3,
+          vagas_totais: 12,
+          vagas_restantes: 9,
+          aparicoes_hora: 60,
+          aparicoes_dia: 1_080,
+          aparicoes_mes: 32_400,
+          tela_dia_minutos: 180,
+          ciclo_segundos: 60,
           duracao_segundos: 10,
+          aparicoes_hora_min: 15,
+          aparicoes_dia_min: 270,
+          aparicoes_mes_min: 8_100,
+          tela_dia_min_minutos: 45,
+          ciclo_max_segundos: 240,
         }),
       }),
     );
@@ -44,10 +49,14 @@ describe("status operacional no Hero", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Sua marca: 324 aparições por dia — 54 minutos de tela, todo dia."),
+        screen.getByText(
+          "Hoje, com apenas 3 anunciantes, sua marca recebe 60 por hora e 3 horas de tela por dia — 4× o garantido.",
+        ),
       ).toBeInTheDocument();
     });
-    expect(screen.getByText("No mínimo 18 aparições por hora.")).toBeInTheDocument();
-    expect(screen.getByText("5", { exact: true })).toBeInTheDocument();
+    expect(
+      screen.getByText("No mínimo 15 aparições por hora — 45 minutos de tela por dia."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("9", { exact: true })).toBeInTheDocument();
   });
 });

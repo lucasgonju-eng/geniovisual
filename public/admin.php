@@ -39,6 +39,7 @@ $adminConfigured = admin_is_configured();
 $loginError = '';
 $painelErrors = [];
 $painelForm = null;
+$painelCeilingConfirmation = '';
 
 $isValidCsrf = static function (): bool {
   return hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '');
@@ -106,58 +107,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_painel']) && !em
     'vagas_totais' => trim((string) ($_POST['vagas_totais'] ?? '')),
   ];
 
-  $anunciantes = filter_var(
-    $painelForm['anunciantes_regulares'],
-    FILTER_VALIDATE_INT,
-    ['options' => ['min_range' => 0]]
-  );
-  $duracao = filter_var(
-    $painelForm['duracao_segundos'],
-    FILTER_VALIDATE_INT,
-    ['options' => ['min_range' => 5, 'max_range' => 60]]
-  );
-  $horas = filter_var(
-    $painelForm['horas_por_dia'],
-    FILTER_VALIDATE_INT,
-    ['options' => ['min_range' => 1, 'max_range' => 24]]
-  );
-  $vagas = filter_var(
-    $painelForm['vagas_totais'],
-    FILTER_VALIDATE_INT,
-    ['options' => ['min_range' => 0]]
-  );
+  $validation = painel_validate_admin_config([
+    ...$painelForm,
+    'atualizado_em' => date('Y-m-d'),
+  ]);
+  $painelErrors = $validation['errors'];
 
-  if ($anunciantes === false) {
-    $painelErrors[] = 'Anunciantes regulares deve ser um inteiro maior ou igual a zero.';
-  }
-  if ($duracao === false) {
-    $painelErrors[] = 'A duração deve ser um inteiro entre 5 e 60 segundos.';
-  }
-  if ($horas === false) {
-    $painelErrors[] = 'As horas por dia devem ser um inteiro entre 1 e 24.';
-  }
-  if ($vagas === false) {
-    $painelErrors[] = 'Vagas totais deve ser um inteiro maior ou igual a zero.';
-  }
-  if ($anunciantes !== false && $vagas !== false && $vagas < $anunciantes) {
-    $painelErrors[] = 'Vagas totais não pode ser menor que anunciantes regulares.';
-  }
+  if ($painelErrors === [] && is_array($validation['config'])) {
+    $currentConfig = painel_read_config();
+    $proposedConfig = $validation['config'];
+    $ceilingWarning = painel_ceiling_increase_warning($currentConfig, $proposedConfig);
+    $ceilingConfirmed = (string) ($_POST['confirm_teto'] ?? '') === '1';
 
-  if ($painelErrors === []) {
-    try {
-      painel_write_config([
-        'anunciantes_regulares' => $anunciantes,
-        'einstein_intercalado' => $painelForm['einstein_intercalado'],
-        'duracao_segundos' => $duracao,
-        'horas_por_dia' => $horas,
-        'vagas_totais' => $vagas,
-        'atualizado_em' => date('Y-m-d'),
-      ]);
-      $_SESSION['painel_flash'] = 'Configuração do painel atualizada.';
-      header('Location: admin.php?tab=painel');
-      exit;
-    } catch (Throwable $error) {
-      $painelErrors[] = 'Não foi possível salvar a configuração privada.';
+    if ($ceilingWarning !== null && !$ceilingConfirmed) {
+      $painelCeilingConfirmation = $ceilingWarning;
+    } else {
+      try {
+        painel_write_config($proposedConfig);
+        $_SESSION['painel_flash'] = 'Configuração do painel atualizada.';
+        header('Location: admin.php?tab=painel');
+        exit;
+      } catch (Throwable $error) {
+        $painelErrors[] = 'Não foi possível salvar a configuração privada.';
+      }
     }
   }
 }
@@ -604,6 +576,16 @@ function formatLeadOrigin($lead) {
           <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
           <input type="hidden" name="save_painel" value="1">
 
+          <?php if ($painelCeilingConfirmation !== ''): ?>
+            <div class="rounded-lg border border-amber-700 bg-amber-950/40 px-4 py-3 text-sm text-amber-200">
+              <p><?= htmlspecialchars($painelCeilingConfirmation) ?></p>
+              <button type="submit" name="confirm_teto" value="1"
+                class="mt-3 rounded-lg bg-amber-600 px-4 py-2 font-semibold text-white hover:bg-amber-500">
+                Confirmar aumento do teto
+              </button>
+            </div>
+          <?php endif; ?>
+
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="block">
               <span class="block text-sm text-zinc-400 mb-1.5">Anunciantes regulares</span>
@@ -668,13 +650,24 @@ function formatLeadOrigin($lead) {
         </div>
 
         <div class="space-y-3">
-          <div class="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
-            <p class="font-semibold text-white">
-              No mínimo <span id="preview-hora"><?= $painelStatus['aparicoes_hora'] ?></span> aparições por hora.
+          <div class="rounded-xl border border-cyan-900 bg-cyan-950/20 p-4">
+            <p class="text-xs font-semibold uppercase tracking-wider text-cyan-400">Entrega de hoje</p>
+            <p class="mt-1 font-semibold text-white">
+              <span id="preview-hora"><?= $painelStatus['aparicoes_hora'] ?></span> aparições por hora —
+              <span id="preview-tempo"><?= $painelStatus['tela_dia_minutos'] ?> minutos</span> por dia.
             </p>
             <p class="mt-1 text-sm text-zinc-500">
-              Hoje, com <span id="preview-anunciantes-frase"><?= $painelStatus['anunciantes'] ?></span> anunciantes,
-              sua marca ficaria <span id="preview-tempo"><?= $painelStatus['tela_dia_minutos'] ?> minutos</span> por dia na tela.
+              Com <span id="preview-anunciantes-frase"><?= $painelStatus['anunciantes'] ?></span> anunciantes regulares.
+            </p>
+          </div>
+          <div class="rounded-xl border border-amber-800 bg-amber-950/20 p-4">
+            <p class="text-xs font-semibold uppercase tracking-wider text-amber-400">Piso garantido no teto</p>
+            <p class="mt-1 font-semibold text-white">
+              No mínimo <span id="preview-hora-min"><?= $painelStatus['aparicoes_hora_min'] ?></span> aparições por hora —
+              <span id="preview-tempo-min"><?= $painelStatus['tela_dia_min_minutos'] ?> minutos</span> por dia.
+            </p>
+            <p class="mt-1 text-sm text-zinc-500">
+              Cenário com <span id="preview-teto"><?= $painelStatus['vagas_totais'] ?></span> anunciantes.
             </p>
           </div>
           <div class="rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
@@ -714,14 +707,22 @@ function formatLeadOrigin($lead) {
           const perHour = cycle > 0 ? 3600 / cycle : 0;
           const perDay = perHour * hours;
           const minutes = Math.round((perDay * duration) / 60);
+          const maxSlots = interleaved ? totalVacancies * 2 : totalVacancies;
+          const maxCycle = maxSlots * duration;
+          const floorPerHour = maxCycle > 0 ? 3600 / maxCycle : 0;
+          const floorPerDay = floorPerHour * hours;
+          const floorMinutes = Math.round((floorPerDay * duration) / 60);
 
           setText('preview-anunciantes', advertisers);
           setText('preview-anunciantes-frase', advertisers);
           setText('preview-vagas', Math.max(0, totalVacancies - advertisers));
           setText('preview-hora', Math.round(perHour));
+          setText('preview-hora-min', Math.round(floorPerHour));
           setText('preview-dia', Math.round(perDay));
           setText('preview-mes', Math.round(perDay * 30));
           setText('preview-tempo', durationLabel(minutes));
+          setText('preview-tempo-min', durationLabel(floorMinutes));
+          setText('preview-teto', totalVacancies);
           setText('preview-ciclo', `${Math.round(cycle)}s`);
           setText('preview-duracao', `${Math.round(duration)}s`);
         };
