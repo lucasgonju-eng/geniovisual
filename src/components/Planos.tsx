@@ -18,16 +18,21 @@ const Planos = () => {
         </p>
         <div className="mx-auto mb-10 max-w-3xl rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-center text-sm text-muted-foreground">
           Valores sob consulta. Quanto maior o compromisso, menor o valor mensal.
-          {isLive && ` Restam ${painel.vagas_restantes} vagas, respeitando um anunciante por segmento.`}
+          {isLive && ` Restam ${painel.vagas_restantes} vagas no rodízio.`}
         </div>
 
-        <div className="grid gap-5 max-w-5xl mx-auto items-stretch md:grid-cols-3">
+        <div className="grid gap-5 max-w-7xl mx-auto items-stretch md:grid-cols-2 xl:grid-cols-4">
           {PLANS.map((plan) => {
             const features = [
-              plan.contract,
-              `Frequência garantida: ${painel.aparicoes_hora_min} aparições/hora`,
-              "Exclusividade do seu segmento",
-              ...plan.creativeSupport,
+              { label: plan.contract, muted: false },
+              { label: `Frequência garantida: ${painel.aparicoes_hora_min} aparições/hora`, muted: false },
+              {
+                label: plan.exclusive
+                  ? "Exclusividade do seu segmento"
+                  : "Sem exclusividade de segmento",
+                muted: !plan.exclusive,
+              },
+              ...plan.creativeSupport.map((feature) => ({ label: feature, muted: false })),
             ];
 
             return (
@@ -57,9 +62,16 @@ const Planos = () => {
 
             <ul className="space-y-3 mb-6 flex-1">
               {features.map((feature) => (
-                <li key={feature} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <span className="neon-gradient-text mt-0.5">✦</span>
-                  {feature}
+                <li
+                  key={feature.label}
+                  className={`flex items-start gap-2 text-sm ${
+                    feature.muted ? "font-medium text-zinc-500" : "text-muted-foreground"
+                  }`}
+                >
+                  <span className={feature.muted ? "mt-0.5 text-zinc-500" : "neon-gradient-text mt-0.5"}>
+                    {feature.muted ? "—" : "✦"}
+                  </span>
+                  {feature.label}
                 </li>
               ))}
             </ul>
@@ -90,7 +102,7 @@ const Planos = () => {
         </div>
 
         <p className="text-center mt-10 text-muted-foreground text-sm font-medium max-w-3xl mx-auto">
-          Todos os planos têm a mesma frequência garantida e a mesma exclusividade de segmento. O que muda é o valor mensal e o apoio criativo.
+          Todos os planos têm a mesma frequência garantida. A partir do trimestral, você também trava o seu segmento: nenhuma empresa concorrente anuncia no painel enquanto o seu contrato estiver ativo.
         </p>
       </div>
     </section>
