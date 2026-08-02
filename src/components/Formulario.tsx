@@ -19,6 +19,7 @@ const Formulario = () => {
     empresa: "",
     plano: "",
     mensagem: "",
+    website: "",
     consent: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,6 +68,7 @@ const Formulario = () => {
           consent: true,
           consent_text: CONSENT_TEXT,
           consent_at: new Date().toISOString(),
+          website: form.website,
         }),
       });
 
@@ -131,6 +133,19 @@ const Formulario = () => {
         <div className="grid gap-8 max-w-3xl mx-auto">
           {/* Form */}
           <form onSubmit={handleSubmit} className="glass-card neon-gradient-border rounded-xl p-6 sm:p-8 space-y-5">
+            <div className="absolute -left-[9999px]" aria-hidden="true">
+              <label htmlFor="website">Website</label>
+              <input
+                id="website"
+                name="website"
+                type="text"
+                value={form.website}
+                onChange={(e) => setForm({ ...form, website: e.target.value })}
+                autoComplete="off"
+                tabIndex={-1}
+                maxLength={255}
+              />
+            </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
                 Prefere comparar com calma? Envie seus dados e receba uma proposta comercial alinhada ao seu prazo e objetivo.
@@ -147,6 +162,7 @@ const Formulario = () => {
                 data-label="Nome"
                 className="w-full rounded-lg bg-muted border border-border px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="Seu nome"
+                maxLength={120}
                 required
               />
             </div>
@@ -161,6 +177,7 @@ const Formulario = () => {
                 data-label="E-mail"
                 className="w-full rounded-lg bg-muted border border-border px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="seu@email.com"
+                maxLength={255}
                 required
               />
             </div>
@@ -175,6 +192,7 @@ const Formulario = () => {
                 data-label="WhatsApp"
                 className="w-full rounded-lg bg-muted border border-border px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="(62) 99999-9999"
+                maxLength={255}
                 required
               />
             </div>
@@ -186,6 +204,7 @@ const Formulario = () => {
                 onChange={(e) => setForm({ ...form, empresa: e.target.value })}
                 className="w-full rounded-lg bg-muted border border-border px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="Nome da empresa (opcional)"
+                maxLength={120}
               />
             </div>
             <div>
@@ -214,6 +233,7 @@ const Formulario = () => {
                 data-label="Mensagem"
                 className="w-full rounded-lg bg-muted border border-border px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary h-24 resize-none"
                 placeholder="Sua mensagem (opcional)"
+                maxLength={2000}
               />
             </div>
             <label className="flex items-start gap-3 cursor-pointer">
