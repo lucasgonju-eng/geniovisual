@@ -89,7 +89,8 @@ jobs:
           ssh -i ~/.ssh/id_ed25519 -p "$DEPLOY_PORT" \
             "$DEPLOY_USER@$DEPLOY_HOST" \
             "test -d '$DEPLOY_PATH' &&
-             test -d '$DEPLOY_PATH/private' &&
+             test -d '$DEPLOY_PATH/../private' &&
+             test -f '$DEPLOY_PATH/../private/bootstrap.php' &&
              test -f '$DEPLOY_PATH/crm-data/.htaccess'"
 
       - name: Deploy via rsync
