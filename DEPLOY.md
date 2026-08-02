@@ -4,6 +4,7 @@
 
 - Domínio: `https://geniovisual.com.br/`
 - Docroot real: `/home/u183246221/domains/geniovisual.com.br/public_html`
+- Configuração privada: `/home/u183246221/domains/geniovisual.com.br/private`
 - Método principal: GitHub Actions por SSH/rsync
 - Método de contingência: publicação manual por SSH/SCP
 - Bundle em produção em 01/08/2026: `assets/index-oveIpfQa.js`
@@ -38,7 +39,7 @@ Avise Lucas antes de alterar produção.
 O workflow `.github/workflows/deploy-hostinger.yml`:
 
 1. gera um bundle identificado pelo SHA do commit;
-2. valida a existência de `private/` e `crm-data/.htaccess` no destino;
+2. valida `../private/` fora do docroot e `crm-data/.htaccess` no destino;
 3. executa rsync sem `--delete`;
 4. exclui completamente `private/` e `crm-data/` do envio;
 5. compara os checksums local e remoto;
