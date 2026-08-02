@@ -1,9 +1,12 @@
+# ATENCAO: este workflow NAO publica no site.
+# Comprovado em 01/08/2026: producao servia assets/index-B8E9Velq.js, arquivo
+# identico ao do dist_20260504_170459.zip (upload manual de 04/05/2026).
+# Meses de runs "verdes" nunca atualizaram o docroot servido.
+# Publicacao atual = SSH manual. Ver DEPLOY.md. Correcao = GV-018 (Fase 2).
 name: Deploy to Hostinger (raiz)
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
