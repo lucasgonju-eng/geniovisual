@@ -65,6 +65,8 @@ Nunca apagar nem sobrescrever:
 
 - `private/`
 - `private/app-config.local.php`
+- `private/painel-config.json`
+- `private/promocao.json`
 - `crm-data/leads.json`
 - `crm-data/analytics.json`
 - demais arquivos `crm-data/*.json`

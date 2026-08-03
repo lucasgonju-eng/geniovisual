@@ -598,3 +598,182 @@ function painel_write_config(array $config): void
         }
     }
 }
+
+function promo_config_path(): string
+{
+    $override = getenv('GENIO_PROMO_CONFIG_PATH');
+    if (is_string($override) && $override !== '') {
+        return $override;
+    }
+
+    return dirname(__DIR__, 2) . '/private/promocao.json';
+}
+
+function promo_default(): array
+{
+    return [
+        'ativa' => false,
+        'rotulo' => 'Promoção Relâmpago — 5 primeiros',
+        'descricao' => '3 meses pelo preço de 2 e, no PIX à vista, mais 20% de desconto. Um anunciante por segmento, frequência mínima garantida em contrato. Direto com o proprietário, sem agência e sem comissão.',
+        'preco_total' => 5760.0,
+        'equivalente_mensal' => 1920.0,
+        'forma_pagamento' => 'PIX à vista (100% antecipado)',
+        'limite_vagas' => 5,
+        'vagas_restantes' => 5,
+        'validade' => '',
+        'mensagem_whatsapp' => 'Vi o anúncio relâmpago do painel da T-15 e quero a condição dos 5 primeiros - R$ 5.760 no PIX',
+        'atualizado_em' => '',
+    ];
+}
+
+function promo_normalize(array $candidate): array
+{
+    $defaults = promo_default();
+    $normalizeFloat = static function (mixed $value, float $fallback): float {
+        if (!is_numeric($value)) {
+            return $fallback;
+        }
+        $number = (float) $value;
+        return is_finite($number) ? max(0.0, $number) : $fallback;
+    };
+    $normalizeInteger = static function (mixed $value, int $fallback): int {
+        if ($value === null || $value === '') {
+            return $fallback;
+        }
+        return max(0, (int) $value);
+    };
+    $normalizeString = static function (mixed $value, string $fallback, int $limit): string {
+        if ($value === null) {
+            return $fallback;
+        }
+        return mb_substr(trim((string) $value), 0, $limit, 'UTF-8');
+    };
+
+    $limit = $normalizeInteger(
+        $candidate['limite_vagas'] ?? null,
+        $defaults['limite_vagas']
+    );
+    $remaining = $normalizeInteger(
+        $candidate['vagas_restantes'] ?? null,
+        $defaults['vagas_restantes']
+    );
+    $validUntil = trim((string) ($candidate['validade'] ?? ''));
+    $validDate = DateTimeImmutable::createFromFormat('!Y-m-d', $validUntil);
+    if (
+        $validUntil === ''
+        || $validDate === false
+        || $validDate->format('Y-m-d') !== $validUntil
+    ) {
+        $validUntil = '';
+    }
+
+    return [
+        'ativa' => ($candidate['ativa'] ?? false) === true
+            || in_array($candidate['ativa'] ?? null, [1, '1', 'on'], true),
+        'rotulo' => $normalizeString($candidate['rotulo'] ?? null, $defaults['rotulo'], 120),
+        'descricao' => $normalizeString($candidate['descricao'] ?? null, $defaults['descricao'], 400),
+        'preco_total' => $normalizeFloat(
+            $candidate['preco_total'] ?? null,
+            $defaults['preco_total']
+        ),
+        'equivalente_mensal' => $normalizeFloat(
+            $candidate['equivalente_mensal'] ?? null,
+            $defaults['equivalente_mensal']
+        ),
+        'forma_pagamento' => $normalizeString(
+            $candidate['forma_pagamento'] ?? null,
+            $defaults['forma_pagamento'],
+            80
+        ),
+        'limite_vagas' => $limit,
+        'vagas_restantes' => min($remaining, $limit),
+        'validade' => $validUntil,
+        'mensagem_whatsapp' => $normalizeString(
+            $candidate['mensagem_whatsapp'] ?? null,
+            $defaults['mensagem_whatsapp'],
+            300
+        ),
+        'atualizado_em' => $normalizeString(
+            $candidate['atualizado_em'] ?? null,
+            $defaults['atualizado_em'],
+            30
+        ),
+    ];
+}
+
+function promo_read(): array
+{
+    $path = promo_config_path();
+    if (!is_file($path)) {
+        return promo_default();
+    }
+
+    $contents = file_get_contents($path);
+    if ($contents === false) {
+        return promo_default();
+    }
+
+    $decoded = json_decode($contents, true);
+    return is_array($decoded) ? promo_normalize($decoded) : promo_default();
+}
+
+function promo_write(array $promotion): void
+{
+    $path = promo_config_path();
+    $directory = dirname($path);
+    if (!is_dir($directory)) {
+        throw new RuntimeException('Diretório privado não encontrado.');
+    }
+
+    $encoded = json_encode(
+        promo_normalize($promotion),
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+    );
+    if ($encoded === false) {
+        throw new RuntimeException('Não foi possível serializar a promoção.');
+    }
+
+    $temporary = tempnam($directory, 'promo-');
+    if ($temporary === false) {
+        throw new RuntimeException('Não foi possível criar o arquivo temporário.');
+    }
+
+    try {
+        if (file_put_contents($temporary, $encoded . PHP_EOL, LOCK_EX) === false) {
+            throw new RuntimeException('Não foi possível gravar a promoção.');
+        }
+        chmod($temporary, 0640);
+        if (!rename($temporary, $path)) {
+            throw new RuntimeException('Não foi possível publicar a promoção.');
+        }
+        chmod($path, 0640);
+    } finally {
+        if (is_file($temporary)) {
+            unlink($temporary);
+        }
+    }
+}
+
+function promo_public_view(array $promotion, ?string $today = null): ?array
+{
+    $normalized = promo_normalize($promotion);
+    $today = $today ?? date('Y-m-d');
+    if (
+        !$normalized['ativa']
+        || $normalized['vagas_restantes'] <= 0
+        || ($normalized['validade'] !== '' && $normalized['validade'] < $today)
+    ) {
+        return null;
+    }
+
+    return [
+        'rotulo' => $normalized['rotulo'],
+        'descricao' => $normalized['descricao'],
+        'preco_total' => $normalized['preco_total'],
+        'equivalente_mensal' => $normalized['equivalente_mensal'],
+        'forma_pagamento' => $normalized['forma_pagamento'],
+        'vagas_restantes' => $normalized['vagas_restantes'],
+        'validade' => $normalized['validade'],
+        'mensagem_whatsapp' => $normalized['mensagem_whatsapp'],
+    ];
+}

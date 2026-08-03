@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
+import PromoBanner from "@/components/PromoBanner";
 import ProvaVisual from "@/components/ProvaVisual";
 import Vantagens from "@/components/Vantagens";
 import Credibilidade from "@/components/Credibilidade";
@@ -18,6 +19,7 @@ const Index = () => (
   <main className="min-h-screen">
     <Navbar />
     <Hero />
+    <PromoBanner />
     <Vantagens />
     <Credibilidade />
     <Frequencia />

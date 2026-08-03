@@ -7,7 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 *.local.php
-private/painel-config.json
+private/*.json
 
 node_modules
 dist

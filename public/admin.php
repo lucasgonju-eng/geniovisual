@@ -44,6 +44,8 @@ $segmentErrors = [];
 $segmentForm = null;
 $pricingErrors = [];
 $pricingForm = null;
+$promoErrors = [];
+$promoForm = null;
 
 $isValidCsrf = static function (): bool {
   return hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '');
@@ -249,6 +251,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_precos']) && !em
   }
 }
 
+// --- Ação: atualizar promoção relâmpago ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_promo']) && !empty($_SESSION['admin_logged'])) {
+  if (!$isValidCsrf()) {
+    http_response_code(403);
+    exit('Sessão expirada. Recarregue a página e tente novamente.');
+  }
+
+  $promoForm = promo_normalize([
+    'ativa' => isset($_POST['ativa']),
+    'rotulo' => $_POST['rotulo'] ?? '',
+    'descricao' => $_POST['descricao'] ?? '',
+    'preco_total' => $_POST['preco_total'] ?? '',
+    'equivalente_mensal' => $_POST['equivalente_mensal'] ?? '',
+    'forma_pagamento' => $_POST['forma_pagamento'] ?? '',
+    'limite_vagas' => $_POST['limite_vagas'] ?? '',
+    'vagas_restantes' => $_POST['vagas_restantes'] ?? '',
+    'validade' => $_POST['validade'] ?? '',
+    'mensagem_whatsapp' => $_POST['mensagem_whatsapp'] ?? '',
+    'atualizado_em' => date(DATE_ATOM),
+  ]);
+
+  try {
+    promo_write($promoForm);
+    $_SESSION['promo_flash'] = 'Promoção atualizada.';
+    header('Location: admin.php?tab=promo');
+    exit;
+  } catch (Throwable $error) {
+    $promoErrors[] = 'Não foi possível salvar a promoção.';
+  }
+}
+
 // --- Se não logado, exibir tela de login ---
 if (empty($_SESSION['admin_logged'])):
 ?>
@@ -301,7 +334,7 @@ if (empty($_SESSION['admin_logged'])):
 <?php
 // --- Dashboard (logado) ---
 $tab = $_GET['tab'] ?? 'crm';
-if (!in_array($tab, ['crm', 'analytics', 'painel', 'segmentos', 'precos'], true)) {
+if (!in_array($tab, ['crm', 'analytics', 'painel', 'segmentos', 'precos', 'promo'], true)) {
   $tab = 'crm';
 }
 
@@ -341,6 +374,9 @@ $minimumPriceInput = $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save
   : (string) $painelConfig['preco_minimo'];
 $pricingFlash = (string) ($_SESSION['precos_flash'] ?? '');
 unset($_SESSION['precos_flash']);
+$promoDisplay = $promoForm ?? promo_read();
+$promoFlash = (string) ($_SESSION['promo_flash'] ?? '');
+unset($_SESSION['promo_flash']);
 
 // CRM data
 $crmFile = __DIR__ . '/crm-data/leads.json';
@@ -470,7 +506,7 @@ function formatLeadOrigin($lead) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= htmlspecialchars(['crm' => 'CRM', 'analytics' => 'Analytics', 'painel' => 'Painel', 'segmentos' => 'Segmentos', 'precos' => 'Preços'][$tab]) ?> • Gênio Visual</title>
+  <title><?= htmlspecialchars(['crm' => 'CRM', 'analytics' => 'Analytics', 'painel' => 'Painel', 'segmentos' => 'Segmentos', 'precos' => 'Preços', 'promo' => 'Promoção'][$tab]) ?> • Gênio Visual</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>body{background:#0a0a0a;}</style>
 </head>
@@ -515,6 +551,10 @@ function formatLeadOrigin($lead) {
       <a href="admin.php?tab=precos"
          class="px-5 py-3 text-sm font-medium transition border-b-2 <?= $tab === 'precos' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300' ?>">
         Preços
+      </a>
+      <a href="admin.php?tab=promo"
+         class="px-5 py-3 text-sm font-medium transition border-b-2 <?= $tab === 'promo' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300' ?>">
+        Promoção
       </a>
     </div>
   </header>
@@ -1013,6 +1053,152 @@ function formatLeadOrigin($lead) {
         </button>
       </form>
     </section>
+
+  <?php elseif ($tab === 'promo'): ?>
+    <!-- ===================== ABA PROMOÇÃO ===================== -->
+    <?php $publicPromoPreview = promo_public_view($promoDisplay); ?>
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+      <section class="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+        <div class="mb-6">
+          <h2 class="text-xl font-semibold">Promoção Relâmpago</h2>
+          <p class="mt-1 text-sm text-zinc-500">
+            Este banner é independente dos preços e campanhas dos planos.
+          </p>
+        </div>
+
+        <?php if ($promoFlash !== ''): ?>
+          <p class="mb-5 rounded-lg border border-green-700 bg-green-950/40 px-4 py-3 text-sm text-green-300">
+            <?= htmlspecialchars($promoFlash) ?>
+          </p>
+        <?php endif; ?>
+
+        <?php if ($promoErrors !== []): ?>
+          <div class="mb-5 rounded-lg border border-red-800 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+            <?php foreach ($promoErrors as $error): ?>
+              <p><?= htmlspecialchars($error) ?></p>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+
+        <form method="POST" action="admin.php?tab=promo" class="space-y-5">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+          <input type="hidden" name="save_promo" value="1">
+
+          <label class="flex items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-950/60 px-4 py-3">
+            <input type="checkbox" name="ativa" value="1"
+              <?= !empty($promoDisplay['ativa']) ? 'checked' : '' ?>
+              class="h-5 w-5 rounded border-zinc-600 bg-zinc-800 text-cyan-500 focus:ring-cyan-500">
+            <span>
+              <strong class="block text-sm text-white">Ativa</strong>
+              <span class="text-xs text-zinc-500">Desmarque e salve para remover o banner imediatamente.</span>
+            </span>
+          </label>
+
+          <label class="block">
+            <span class="mb-1.5 block text-sm text-zinc-400">Rótulo</span>
+            <input type="text" name="rotulo" maxlength="120" required
+              value="<?= htmlspecialchars((string) $promoDisplay['rotulo']) ?>"
+              class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+          </label>
+
+          <label class="block">
+            <span class="mb-1.5 block text-sm text-zinc-400">Descrição</span>
+            <textarea name="descricao" maxlength="400" rows="5" required
+              class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"><?= htmlspecialchars((string) $promoDisplay['descricao']) ?></textarea>
+          </label>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="block">
+              <span class="mb-1.5 block text-sm text-zinc-400">Preço total R$</span>
+              <input type="number" name="preco_total" min="0" step="0.01" required
+                value="<?= htmlspecialchars((string) $promoDisplay['preco_total']) ?>"
+                class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+            </label>
+            <label class="block">
+              <span class="mb-1.5 block text-sm text-zinc-400">Equivalente mensal R$</span>
+              <input type="number" name="equivalente_mensal" min="0" step="0.01" required
+                value="<?= htmlspecialchars((string) $promoDisplay['equivalente_mensal']) ?>"
+                class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+              <span class="mt-1 block text-xs text-zinc-500">Valor apenas informativo no banner.</span>
+            </label>
+          </div>
+
+          <label class="block">
+            <span class="mb-1.5 block text-sm text-zinc-400">Forma de pagamento</span>
+            <input type="text" name="forma_pagamento" maxlength="80" required
+              value="<?= htmlspecialchars((string) $promoDisplay['forma_pagamento']) ?>"
+              class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+          </label>
+
+          <div class="grid gap-4 sm:grid-cols-3">
+            <label class="block">
+              <span class="mb-1.5 block text-sm text-zinc-400">Limite de vagas</span>
+              <input type="number" name="limite_vagas" min="0" step="1" required
+                value="<?= htmlspecialchars((string) $promoDisplay['limite_vagas']) ?>"
+                class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+            </label>
+            <label class="block">
+              <span class="mb-1.5 block text-sm text-zinc-400">Vagas restantes</span>
+              <input type="number" name="vagas_restantes" min="0" step="1" required
+                value="<?= htmlspecialchars((string) $promoDisplay['vagas_restantes']) ?>"
+                class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+            </label>
+            <label class="block">
+              <span class="mb-1.5 block text-sm text-zinc-400">Validade (opcional)</span>
+              <input type="date" name="validade"
+                value="<?= htmlspecialchars((string) $promoDisplay['validade']) ?>"
+                class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+            </label>
+          </div>
+
+          <label class="block">
+            <span class="mb-1.5 block text-sm text-zinc-400">Mensagem WhatsApp</span>
+            <textarea name="mensagem_whatsapp" maxlength="300" rows="3" required
+              class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"><?= htmlspecialchars((string) $promoDisplay['mensagem_whatsapp']) ?></textarea>
+          </label>
+
+          <button type="submit"
+            class="w-full rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 py-3 font-semibold text-white hover:opacity-90">
+            Salvar promoção
+          </button>
+        </form>
+      </section>
+
+      <aside class="h-fit rounded-xl border border-cyan-800 bg-gradient-to-br from-cyan-950/60 to-zinc-900 p-6 lg:sticky lg:top-28">
+        <div class="mb-5 flex items-center justify-between gap-3">
+          <h2 class="text-lg font-semibold text-cyan-300">Pré-visualização</h2>
+          <span class="rounded-full px-3 py-1 text-xs font-medium <?= $publicPromoPreview !== null ? 'bg-green-950 text-green-300' : 'bg-zinc-800 text-zinc-400' ?>">
+            <?= $publicPromoPreview !== null ? 'Visível no site' : 'Oculta no site' ?>
+          </span>
+        </div>
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-400">
+          <?= htmlspecialchars((string) $promoDisplay['rotulo']) ?>
+        </p>
+        <p class="mt-4 text-sm leading-relaxed text-zinc-300">
+          <?= htmlspecialchars((string) $promoDisplay['descricao']) ?>
+        </p>
+        <p class="mt-6 text-4xl font-bold text-white">
+          R$ <?= number_format((float) $promoDisplay['preco_total'], 2, ',', '.') ?>
+        </p>
+        <p class="mt-1 text-sm text-zinc-400">
+          equivale a R$ <?= number_format((float) $promoDisplay['equivalente_mensal'], 2, ',', '.') ?>/mês
+        </p>
+        <p class="mt-4 text-sm text-zinc-300">
+          <?= htmlspecialchars((string) $promoDisplay['forma_pagamento']) ?>
+        </p>
+        <p class="mt-4 font-semibold text-amber-300">
+          Restam <?= (int) $promoDisplay['vagas_restantes'] ?> vagas nesta condição
+        </p>
+        <?php if ($promoDisplay['validade'] !== ''): ?>
+          <p class="mt-2 text-xs text-zinc-500">
+            válido até <?= htmlspecialchars(date('d/m/Y', strtotime((string) $promoDisplay['validade']))) ?>
+          </p>
+        <?php endif; ?>
+        <div class="mt-6 rounded-lg border border-zinc-700 bg-zinc-950/60 p-3 text-xs text-zinc-400">
+          WhatsApp: <?= htmlspecialchars((string) $promoDisplay['mensagem_whatsapp']) ?>
+        </div>
+      </aside>
+    </div>
 
   <?php elseif ($tab === 'segmentos'): ?>
     <!-- ===================== ABA SEGMENTOS ===================== -->
