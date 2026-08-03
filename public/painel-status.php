@@ -18,7 +18,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
     exit;
 }
 
+$status = painel_calculate_status(painel_read_config());
+$status['promocao'] = promo_public_view(promo_read());
+
 echo json_encode(
-    painel_calculate_status(painel_read_config()),
+    $status,
     JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
 );

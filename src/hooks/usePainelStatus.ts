@@ -14,6 +14,17 @@ export type PlanPrice = {
   destaque: boolean;
 };
 
+export type PromocaoPublica = {
+  rotulo: string;
+  descricao: string;
+  preco_total: number;
+  equivalente_mensal: number;
+  forma_pagamento: string;
+  vagas_restantes: number;
+  validade: string;
+  mensagem_whatsapp: string;
+};
+
 export type PainelStatus = {
   anunciantes: number;
   vagas_totais: number;
@@ -34,6 +45,7 @@ export type PainelStatus = {
   segmentos_consistente: boolean;
   planos: PlanPrice[];
   preco_a_partir_de: number | null;
+  promocao?: PromocaoPublica | null;
 };
 
 export const PAINEL_STATUS_FALLBACK: PainelStatus = {
@@ -127,6 +139,26 @@ const isPainelStatus = (value: unknown): value is PainelStatus => {
     && typeof candidate.segmentos_consistente === "boolean";
 };
 
+const isPromocaoPublica = (value: unknown): value is PromocaoPublica => {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Record<string, unknown>;
+
+  return typeof candidate.rotulo === "string"
+    && typeof candidate.descricao === "string"
+    && typeof candidate.preco_total === "number"
+    && Number.isFinite(candidate.preco_total)
+    && candidate.preco_total >= 0
+    && typeof candidate.equivalente_mensal === "number"
+    && Number.isFinite(candidate.equivalente_mensal)
+    && candidate.equivalente_mensal >= 0
+    && typeof candidate.forma_pagamento === "string"
+    && typeof candidate.vagas_restantes === "number"
+    && Number.isInteger(candidate.vagas_restantes)
+    && candidate.vagas_restantes >= 0
+    && typeof candidate.validade === "string"
+    && typeof candidate.mensagem_whatsapp === "string";
+};
+
 let inFlightRequest: Promise<PainelStatus | null> | null = null;
 
 const requestPainelStatus = () => {
@@ -140,7 +172,14 @@ const requestPainelStatus = () => {
       if (!response.ok) throw new Error("Painel status indisponível");
       return response.json();
     })
-    .then((payload) => (isPainelStatus(payload) ? payload : null))
+    .then((payload) => {
+      if (!isPainelStatus(payload)) return null;
+      const promotion = payload.promocao;
+      return {
+        ...payload,
+        promocao: isPromocaoPublica(promotion) ? promotion : null,
+      };
+    })
     .catch(() => null)
     .finally(() => {
       inFlightRequest = null;

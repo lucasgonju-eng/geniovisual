@@ -2,7 +2,7 @@
 
 import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createServer } from "node:net";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -11,6 +11,7 @@ let phpServer: ChildProcessWithoutNullStreams;
 let baseUrl: string;
 let temporaryDirectory: string;
 let configPath: string;
+let promoPath: string;
 let serverOutput = "";
 
 const segments = [
@@ -59,12 +60,14 @@ beforeAll(async () => {
   const port = await getFreePort();
   temporaryDirectory = await mkdtemp(path.join(tmpdir(), "gv-painel-status-"));
   configPath = path.join(temporaryDirectory, "painel-config.json");
+  promoPath = path.join(temporaryDirectory, "promocao.json");
   baseUrl = `http://127.0.0.1:${port}`;
   phpServer = spawn("php", ["-S", `127.0.0.1:${port}`, "-t", "public"], {
     cwd: process.cwd(),
     env: {
       ...process.env,
       GENIO_PAINEL_CONFIG_PATH: configPath,
+      GENIO_PROMO_CONFIG_PATH: promoPath,
     },
   });
   phpServer.stdout.on("data", (chunk) => {
@@ -115,6 +118,7 @@ describe("painel-status.php", () => {
       segmentos_consistente: false,
       planos: [],
       preco_a_partir_de: null,
+      promocao: null,
     });
   });
 
@@ -153,6 +157,7 @@ describe("painel-status.php", () => {
       segmentos_consistente: false,
       planos: [],
       preco_a_partir_de: null,
+      promocao: null,
     });
   });
 
@@ -314,6 +319,84 @@ describe("painel-status.php", () => {
     expect(JSON.stringify(payload)).not.toContain("preco_minimo");
   });
 
+  it("normaliza a promoção isolada e oculta ofertas expiradas ou esgotadas", () => {
+    const script = `
+      require 'public/lib/painel.php';
+      $active = [...promo_default(), 'ativa' => true];
+      $normalized = promo_normalize([
+        ...$active,
+        'rotulo' => str_repeat('x', 140),
+        'preco_total' => -1,
+        'limite_vagas' => 3,
+        'vagas_restantes' => 9,
+        'validade' => 'data-invalida',
+      ]);
+      echo json_encode([
+        'normalized' => $normalized,
+        'active' => promo_public_view($active, '2026-08-02'),
+        'expired' => promo_public_view([...$active, 'validade' => '2026-08-01'], '2026-08-02'),
+        'sold_out' => promo_public_view([...$active, 'vagas_restantes' => 0], '2026-08-02'),
+        'disabled' => promo_public_view(promo_default(), '2026-08-02'),
+      ], JSON_UNESCAPED_UNICODE);
+    `;
+    const result = JSON.parse(
+      execFileSync("php", ["-r", script], { cwd: process.cwd(), encoding: "utf8" }),
+    );
+
+    expect(result.normalized.rotulo).toHaveLength(120);
+    expect(result.normalized.preco_total).toBe(0);
+    expect(result.normalized.vagas_restantes).toBe(3);
+    expect(result.normalized.validade).toBe("");
+    expect(result.active).toMatchObject({
+      rotulo: "Promoção Relâmpago — 5 primeiros",
+      preco_total: 5_760,
+      equivalente_mensal: 1_920,
+      vagas_restantes: 5,
+    });
+    expect(result.active).not.toHaveProperty("ativa");
+    expect(result.active).not.toHaveProperty("limite_vagas");
+    expect(result.active).not.toHaveProperty("atualizado_em");
+    expect(result.expired).toBeNull();
+    expect(result.sold_out).toBeNull();
+    expect(result.disabled).toBeNull();
+  });
+
+  it("grava a promoção sem alterar painel-config e publica o toggle sem deploy", async () => {
+    const panelBefore = await readFile(configPath, "utf8");
+    const script = `
+      require 'public/lib/painel.php';
+      promo_write([
+        ...promo_default(),
+        'ativa' => true,
+        'vagas_restantes' => 4,
+        'validade' => '2099-08-31',
+        'atualizado_em' => '2026-08-02T21:00:00-03:00',
+      ]);
+    `;
+    execFileSync("php", ["-r", script], {
+      cwd: process.cwd(),
+      env: { ...process.env, GENIO_PROMO_CONFIG_PATH: promoPath },
+    });
+
+    expect(await readFile(configPath, "utf8")).toBe(panelBefore);
+    const stored = JSON.parse(await readFile(promoPath, "utf8"));
+    expect(stored).toMatchObject({ ativa: true, vagas_restantes: 4 });
+
+    const activeResponse = await fetch(`${baseUrl}/painel-status.php`);
+    const activePayload = await activeResponse.json();
+    expect(activePayload.promocao).toMatchObject({
+      rotulo: "Promoção Relâmpago — 5 primeiros",
+      preco_total: 5_760,
+      vagas_restantes: 4,
+      validade: "2099-08-31",
+    });
+    expect(JSON.stringify(activePayload.promocao)).not.toMatch(/ativa|limite_vagas|atualizado_em/i);
+
+    await writeFile(promoPath, JSON.stringify({ ...stored, ativa: false }), "utf8");
+    const disabledResponse = await fetch(`${baseUrl}/painel-status.php`);
+    await expect(disabledResponse.json()).resolves.toMatchObject({ promocao: null });
+  });
+
   it("ativa campanha somente até a validade e restaura o preço cheio depois", () => {
     const script = `
       require 'public/lib/painel.php';
@@ -388,6 +471,7 @@ describe("painel-status.php", () => {
       "duracao_segundos",
       "planos",
       "preco_a_partir_de",
+      "promocao",
       "segmentos",
       "segmentos_consistente",
       "segmentos_livres",
